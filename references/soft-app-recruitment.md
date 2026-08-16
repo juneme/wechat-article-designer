@@ -79,13 +79,13 @@ Use an HTML placeholder when the editor will receive a real team, store, or work
 
 ```html
 <section style="margin:16px 8px 0;padding:10px;box-sizing:border-box;border:1px solid #DDE1EF;border-radius:20px;background:#FFFFFF;">
-  <section style="min-height:96px;margin:0;padding:0;box-sizing:border-box;border-radius:14px;background:#E7F1FF;text-align:center;overflow:hidden;font-size:0;line-height:0;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
+  <section style="min-height:96px;margin:0;padding:0;box-sizing:border-box;border-radius:14px;background:#E7F1FF;text-align:center;overflow:hidden;">
+    <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
   </section>
 </section>
 ```
 
-Tell the publisher to paste the full article, click the blank inner area, and insert the photo directly without selecting or deleting the invisible anchor. Keep placement instructions outside the final image slot. Do not embed a local file path. Keep a QR-code placeholder narrow and centered so it cannot expand into a full-width block.
+Tell the publisher to paste the full article, click the blank inner area, and insert the photo directly without selecting or deleting the 1px paragraph anchor. Keep frame height and visual styles on the containing section. Keep placement instructions outside the final image slot. Do not embed a local file path. Keep a QR-code placeholder narrow and centered so it cannot expand into a full-width block.
 
 ## Cover generation
 

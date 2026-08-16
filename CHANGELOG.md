@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2 - 2026-08-16
+
+- Replace section/span-only photo anchors with a real-editor-verified direct-child 1px paragraph anchor.
+- Keep `min-height`, padding, border, and background on the visual section so WeChat paragraph splitting cannot create full-height blank frames above and below inserted photos.
+- Update rounded, institutional, event, collage, speaker, QR, recruitment, and anniversary slots, plus troubleshooting for both observed failure modes.
+
 ## 1.0.1 - 2026-08-16
 
 - Replace removable text photo placeholders with persistent invisible `&nbsp;` anchors.

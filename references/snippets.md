@@ -14,14 +14,14 @@
 
 All snippets default to `section` + `p` + `span`. Do not introduce `table`, `tbody`, `tr`, or `td` unless the exact final block has passed a documented test in the real WeChat editor.
 
-Manual image slots use a protected editing anchor: one `&nbsp;` inside a zero-size span, wrapped by a blank `min-height` container. Click the blank container and paste or upload directly. Never select all or delete the anchor first; deleting the editor's only child can make WeChat normalize away the surrounding frame. Keep filename maps and replacement instructions in the delivery guide or HTML comments, not inside the final image slot.
+Manual image slots use the real-editor-verified editable-paragraph contract: put all visual styles and `min-height` on a `section`, then make a 1px `<p>` containing one `&nbsp;` its direct child. Click the blank frame and paste or upload directly. Never style the anchor paragraph with frame height or replace it with a span-only child. Keep filename maps and replacement instructions in the delivery guide or HTML comments, not inside the final image slot.
 
 ## Index of snippets
 
 | Snippet | When to use |
 |---|---|
 | Copy Boundary | Every article — wrap once at the outermost level. |
-| Rounded Protected-Anchor Photo Placeholder | Warm, service-oriented, or rounded brand systems. |
+| Rounded Editable-Paragraph Photo Placeholder | Warm, service-oriented, or rounded brand systems. |
 | Institutional Photo Placeholder | Modern, solemn, public-interest, or regulated-industry articles. |
 | Flow Photo Frame (Event Recap) | A low-decoration, full-width event photo slot with a small index strip. |
 | Event Recap Chapter Header | A spacious numbered chapter break for mobile event stories. |
@@ -79,14 +79,14 @@ Wrap your article in a copy boundary so the team can paste the whole fragment in
 
 The `max-width:677px` matches the WeChat editor's content column on mobile. Do not change it.
 
-## Rounded Protected-Anchor Photo Placeholder
+## Rounded Editable-Paragraph Photo Placeholder
 
 Use when the user wants to paste or upload photos manually in the WeChat editor.
 
 ```html
 <section style="box-sizing:border-box;margin:30px 8px 0;padding:10px;border-radius:30px;background:#ffffff;border:2px solid {{BRAND_PRIMARY}};overflow:hidden;">
-  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;border-radius:22px;background:#ffffff;border:2px dashed transparent;overflow:hidden;text-align:center;font-size:0;line-height:0;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
+  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;border-radius:22px;background:#ffffff;border:2px dashed transparent;overflow:hidden;text-align:center;">
+    <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
   </section>
 </section>
 <p style="margin:11px 10px 0;font-size:12px;line-height:1.8;color:{{BRAND_CAPTION}};text-align:center;">caption</p>
@@ -95,7 +95,7 @@ Use when the user wants to paste or upload photos manually in the WeChat editor.
 Insertion workflow:
 
 1. Paste the full article fragment into WeChat.
-2. Click once in the blank inner area.
+2. Click once in the blank inner area until the caret is active.
 3. Insert or paste the photo directly without selecting or deleting anything first.
 4. Confirm that the frame remains and the photo touches the intended inner edge.
 
@@ -109,8 +109,8 @@ Use for modern institutional, public-interest, environmental, public-health, or 
 
 ```html
 <section style="box-sizing:border-box;margin:28px 8px 0;padding:0;background:#eef3f0;border:1px solid #cbd7d1;border-top:4px solid {{BRAND_PRIMARY}};text-align:center;overflow:hidden;">
-  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;font-size:0;line-height:0;overflow:hidden;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
+  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;overflow:hidden;">
+    <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
   </section>
 </section>
 <p style="margin:9px 8px 0;font-size:12px;line-height:1.7;color:{{BRAND_CAPTION}};text-align:center;">{{CAPTION}}</p>
@@ -118,7 +118,7 @@ Use for modern institutional, public-interest, environmental, public-health, or 
 
 Design rules:
 - Use 0-4px radius, a cool-neutral fill, a narrow border, and one strong top rule.
-- Keep the same direct-paste protected-anchor workflow as the rounded variant.
+- Keep the same direct-paste editable-paragraph workflow as the rounded variant.
 - Do not mix this frame with the 30px rounded frame in one article.
 
 ## Flow Photo Frame (Event Recap)
@@ -131,15 +131,15 @@ Use for a wide event photo when the page needs a little structure but should rem
     <span style="display:inline-block;font-size:11px;line-height:1;color:{{BRAND_PRIMARY}};font-weight:800;vertical-align:middle;">{{PHOTO_ORDER}}</span>
     <span style="display:inline-block;margin-left:10px;font-size:11px;line-height:1;color:{{BRAND_SECONDARY_TEXT}};font-weight:600;vertical-align:middle;">{{PHOTO_ROLE}}</span>
   </p>
-  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;background:{{BRAND_BG_LIGHT}};text-align:center;overflow:hidden;font-size:0;line-height:0;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
+  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;background:{{BRAND_BG_LIGHT}};text-align:center;overflow:hidden;">
+    <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
   </section>
 </section>
 <p style="margin:9px 8px 0;font-size:12px;line-height:1.7;color:{{BRAND_CAPTION}};text-align:center;">{{CAPTION}}</p>
 ```
 
 Design rules:
-- Click the blank protected-anchor area and insert the photo directly. Do not delete the inner section or its anchor.
+- Click the blank editable-paragraph area and insert the photo directly. Do not delete the image section or its anchor paragraph.
 - Use one leading photo per chapter. Keep `20-28px` between its preceding copy and the frame.
 - Keep the frame square or nearly square-cornered; let the photograph provide the visual energy.
 
@@ -184,8 +184,8 @@ Use when every participant needs to appear but the user will crop and compose th
     <span style="display:inline-block;font-size:11px;line-height:1;color:{{BRAND_PRIMARY}};font-weight:800;vertical-align:middle;">{{WALL_LABEL}}</span>
     <span style="display:inline-block;margin-left:10px;font-size:11px;line-height:1;color:{{BRAND_SECONDARY_TEXT}};font-weight:600;vertical-align:middle;">{{PORTRAIT_COUNT}} PEOPLE</span>
   </p>
-  <section style="box-sizing:border-box;min-height:120px;margin:0;padding:0;background:{{BRAND_BG_LIGHT}};text-align:center;overflow:hidden;font-size:0;line-height:0;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
+  <section style="box-sizing:border-box;min-height:120px;margin:0;padding:0;background:{{BRAND_BG_LIGHT}};text-align:center;overflow:hidden;">
+    <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
   </section>
 </section>
 <p style="margin:10px 8px 0;font-size:12px;line-height:1.7;color:{{BRAND_CAPTION}};text-align:center;">{{WALL_CAPTION}}</p>
@@ -195,7 +195,7 @@ Composition rules:
 - Crop every portrait to the same 4:5 cell ratio, then assemble a square matrix. `3 x 3` yields a 4:5 wall for up to 9 people; `4 x 4` yields a 4:5 wall for up to 16.
 - Above 16 people, use two labeled 4:5 walls. Do not reduce faces until they become thumbnails on a 375px phone.
 - Keep face scale, eye line, background treatment, and gutter width consistent. Put detailed names in surrounding copy or a separate list unless in-image labels remain legible at phone width.
-- Export the wall at about `1200 x 1500 px`, click the blank protected-anchor area, and insert it directly without deleting the anchor first.
+- Export the wall at about `1200 x 1500 px`, click the blank editable-paragraph area, and insert it directly without deleting the anchor first.
 
 ## Repeated Speaker Card (Single-Column)
 
@@ -207,8 +207,8 @@ Use when a section lists many people and each person needs a photo placeholder p
   <p style="margin:4px 0 0;font-size:19px;line-height:1.4;color:{{BRAND_TEXT}};font-weight:800;">{{NAME}}</p>
   <p style="margin:4px 0 0;font-size:13px;line-height:1.8;color:rgba(22,34,28,0.62);">{{TOPIC}}</p>
   <section style="box-sizing:border-box;margin:14px 0 0;padding:10px;border-radius:24px;background:#ffffff;border:2px solid {{BRAND_PRIMARY}};overflow:hidden;">
-    <section style="box-sizing:border-box;min-height:88px;margin:0;padding:0;border-radius:18px;background:#ffffff;border:2px dashed transparent;overflow:hidden;text-align:center;font-size:0;line-height:0;">
-      <span style="font-size:0;line-height:0;">&nbsp;</span>
+    <section style="box-sizing:border-box;min-height:88px;margin:0;padding:0;border-radius:18px;background:#ffffff;border:2px dashed transparent;overflow:hidden;text-align:center;">
+      <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
     </section>
   </section>
 </section>
@@ -225,8 +225,8 @@ Use when a dark closing section needs a small centered QR or square-asset placeh
 
 ```html
 <section style="box-sizing:border-box;margin:18px auto 0;width:170px;max-width:100%;padding:10px;border-radius:30px;background:#ffffff;border:2px solid rgba(255,255,255,0.68);overflow:hidden;">
-  <section style="box-sizing:border-box;min-height:112px;margin:0;padding:0;border-radius:22px;background:#ffffff;border:2px dashed transparent;overflow:hidden;text-align:center;font-size:0;line-height:0;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
+  <section style="box-sizing:border-box;min-height:112px;margin:0;padding:0;border-radius:22px;background:#ffffff;border:2px dashed transparent;overflow:hidden;text-align:center;">
+    <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
   </section>
 </section>
 <p style="margin:11px 10px 0;font-size:12px;line-height:1.8;color:rgba(255,255,255,0.72);text-align:center;">{{QR_CAPTION}}</p>
@@ -235,7 +235,7 @@ Use when a dark closing section needs a small centered QR or square-asset placeh
 Design rules:
 - Keep the wrapper narrow and centered. Do not let a row-level wrapper become the visual square.
 - If the footer background is light, change the border/text colors accordingly.
-- Use the same direct-paste protected-anchor workflow as the main photo placeholders.
+- Use the same direct-paste editable-paragraph workflow as the main photo placeholders.
 
 ## Real Image in HTML Frame
 
@@ -483,9 +483,11 @@ Design rules:
 
 Use these exact phrasings when answering the team about common issues:
 
-- **Frame disappears while replacing a placeholder**: "The placeholder node was probably selected and deleted with its wrapper. Restore the protected-anchor frame, click its blank inner area, and paste directly without deleting first."
+- **Frame disappears while replacing a placeholder**: "The placeholder node was probably selected and deleted with its wrapper. Restore the editable-paragraph frame, click its blank area, and paste directly without deleting first."
 - **Frame does not travel with a copied image**: "The frame is an HTML wrapper. Copy the whole framed section or use a baked-frame PNG."
-- **Photo has too much blank space**: "A legacy padded instruction paragraph survived beside the image. Replace that slot with the protected-anchor version and paste directly."
+- **Photo has too much blank space**: "A legacy padded instruction paragraph survived beside the image. Replace that slot with the editable-paragraph version and paste directly."
+- **Photo lands after the blank frame**: "The slot has no editable paragraph target. Replace the section/span-only anchor with a direct-child 1px `<p>` anchor."
+- **Blank frames remain above and below the photo**: "Frame height was applied to the editable paragraph. Move `min-height`, padding, border, and background to its containing `section`; keep the anchor paragraph at 1px."
 - **Photo carries background color**: "That background is baked into the bitmap. Use a clean original photo inside an HTML frame."
 - **Top of article is empty**: "The WeChat editor adds default spacing above the article body. Set the first section's padding-top to 0."
 - **Photo frame doesn't show**: "Local image paths don't work in WeChat. Use a placeholder HTML frame, then upload the photo in the editor."
@@ -500,7 +502,7 @@ Run these checks before declaring an article ready:
 - [ ] Comparable content blocks follow the design fingerprint's deliberate outer and inset baselines; no fixed width exceeds the mobile column.
 - [ ] Opening whitespace is intentional: immersive heroes may start at `padding-top:0`, while editorial or quiet openers may use approximately `18-40px`.
 - [ ] Photo frames match one selected visual register; rounded and institutional frame languages are not mixed casually.
-- [ ] Every manual photo or QR slot contains one zero-size `&nbsp;` protected anchor, no padded instruction paragraph, and no delete-first handoff wording.
+- [ ] Every manual photo or QR slot keeps visual styles on a `section`, contains one direct-child 1px `<p>` with one `&nbsp;`, has no padded instruction paragraph, and has no delete-first handoff wording.
 - [ ] Repeated photo-person sections use a verified single-column or editor-tested layout; do not trust browser-only 3-column walls.
 - [ ] Participant collages are inserted as one finished bitmap; a 4:5 wall contains no more than 16 readable faces before splitting.
 - [ ] Footer QR / square asset placeholders stay narrow and centered in flow layout.

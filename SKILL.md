@@ -76,7 +76,7 @@ Create a WeChat-ready article fragment, not an app or ordinary web page.
 - **Web capability R&D / progressive enhancement**: read [`references/progressive-enhancement-lab.md`](references/progressive-enhancement-lab.md). Separate the publishable fragment from the browser experiment host, define a single-column degradation contract, and label browser-only evidence as real-editor pending.
 - **Explicit template request**: load only the named route from `GALLERY.md` and treat it as a structural starter. Show `assets/previews/template-gallery.png` only when the user explicitly asks to browse styles.
 - **Soft App recruitment article**: read [`references/soft-app-recruitment.md`](references/soft-app-recruitment.md), then start from [`assets/soft-app-recruitment-article.html`](assets/soft-app-recruitment-article.html) as a candidate layout. Re-test the final copy in the real WeChat editor; if its compact flex rows are rewritten, use the documented single-column fallback.
-- **Hard-edge dopamine recruitment article**: read [`references/dopamine-editorial-recruitment.md`](references/dopamine-editorial-recruitment.md), then start from [`assets/dopamine-editorial-recruitment-article.html`](assets/dopamine-editorial-recruitment-article.html). Keep the final WeChat fragment single-column and use protected anchors inside image placeholders so inserted images touch the inner frame without deleting its wrapper.
+- **Hard-edge dopamine recruitment article**: read [`references/dopamine-editorial-recruitment.md`](references/dopamine-editorial-recruitment.md), then start from [`assets/dopamine-editorial-recruitment-article.html`](assets/dopamine-editorial-recruitment-article.html). Keep the final WeChat fragment single-column and use editable-paragraph anchors inside image placeholders so inserted images stay inside the frame without deleting its wrapper.
 - **2.35:1 recruitment cover**: run `scripts/generate_wechat_cover.py`; pass final Chinese copy explicitly so the bitmap contains exact approved text.
 - **General sections and troubleshooting**: use `references/snippets.md`. For government-guided or public-interest work, use `references/modern-institutional-public-interest.md` instead of the recruitment pattern.
 - **Clean poster-derived card systems**: use the "White-Interior Accent-Edge Grouped Card" in `references/snippets.md` when the authoritative visual has two or three bright accent colors but the article needs a light, reliable reading surface.
@@ -166,19 +166,19 @@ Use these rules:
 
 - If the user will manually paste photos into the editor, create an HTML photo frame with a placeholder, not a prefilled image.
 - If the user needs to copy the image alone and retain the frame, bake the frame into the image with `scripts/bake_image_frame.py`.
-- If a pasted photo appears with huge empty margins, a legacy padded text placeholder survived beside it. Replace that placeholder with the protected-anchor pattern below and paste directly without deleting anything first.
+- If a pasted photo appears with huge empty margins, a legacy padded text placeholder survived beside it. Replace that placeholder with the editable-paragraph-anchor pattern below and paste directly without deleting anything first.
 - If a pasted photo carries an unwanted background color, the frame/background was baked into the image; switch back to an HTML frame placeholder.
-- If the frame disappears during replacement, the editable placeholder node was selected and deleted together with its wrapper. Restore the protected-anchor frame and paste into its blank inner area without selecting or deleting the anchor. If the user copied only an image and needs the frame to travel with it, use a baked frame instead.
+- If the frame disappears during replacement, the editable placeholder node was selected and deleted together with its wrapper. Restore the editable-paragraph frame and paste into its blank area without selecting or deleting the anchor. If the user copied only an image and needs the frame to travel with it, use a baked frame instead.
+- If the photo lands after the blank frame, the slot has no real caret target. A nested `section` plus `span` is not sufficient; make a 1px `<p>` the direct child of the visual frame.
+- If the photo is surrounded by full-height blank frames above and below, WeChat split a styled paragraph around the inserted image. Keep `min-height`, padding, border, and background on the containing `section`, never on the anchor `<p>`.
 
-## Photo Frame Pattern (Rounded Premium Variant)
+## Photo Frame Pattern (Verified Editable-Paragraph Anchor)
 
-The rounded frame language is verified in the WeChat editor and works well for warm, service-oriented, or lifestyle articles. The protected-anchor replacement workflow is a newer hardening pattern and still requires an exact-fragment real-editor check before publication. It is not the universal default for every visual register.
+The editable-paragraph anchor contract is verified in the WeChat editor. The visual `section` owns the frame and blank height; its direct child `<p>` exists only to provide a caret. The rounded frame language works well for warm, service-oriented, or lifestyle articles, but is not the universal default for every visual register. Re-test each final styled slot in the real editor before publication.
 
 ```html
-<section style="box-sizing:border-box;margin:30px 8px 0;padding:10px;border-radius:30px;background:#ffffff;border:2px solid {{BRAND_PRIMARY}};overflow:hidden;">
-  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;border-radius:22px;background:#ffffff;border:2px dashed transparent;overflow:hidden;text-align:center;font-size:0;line-height:0;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
-  </section>
+<section style="box-sizing:border-box;min-height:116px;margin:30px 8px 0;padding:10px;border-radius:30px;background:#ffffff;border:2px solid {{BRAND_PRIMARY}};overflow:hidden;text-align:center;">
+  <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
 </section>
 <p style="margin:11px 10px 0;font-size:12px;line-height:1.8;color:rgba(22,34,28,0.58);text-align:center;">caption</p>
 ```
@@ -186,20 +186,20 @@ The rounded frame language is verified in the WeChat editor and works well for w
 Key design choices:
 
 - `border:2px solid {{BRAND_PRIMARY}}` — 2px solid primary color, doubled thickness for visibility on white background.
-- `border-radius:30px` outer / `22px` inner — large rounded corners for a premium look.
+- `border-radius:30px` — large rounded corners for a premium look.
 - `margin:30px 8px 0` — very small horizontal margin (4-8px) so the frame fills the column.
-- `border:2px dashed transparent` on inner block — placeholder is invisible, photo insertion leaves no dashed residue.
-- `min-height:96px` keeps the blank frame easy to click before insertion but does not force extra height after a larger image is inserted.
-- A persistent `&nbsp;` inside a zero-size span acts as an invisible editing anchor. Do not replace it with visible placeholder copy inside the final article fragment.
+- `min-height:116px` belongs to the visual section, keeping the blank frame easy to click without cloning a large empty paragraph around the inserted image.
+- A direct-child `<p>` with `font-size:1px`, `line-height:1px`, and one `&nbsp;` acts as the invisible editing anchor. Keep it free of `min-height`, padding, border, and background.
+- Do not substitute a `span` or another `section` for the anchor paragraph. Those nodes did not provide a reliable WeChat caret target in real-editor testing.
 - Caption uses `rgba(22,34,28,0.58)` semi-transparent gray to soften hierarchy.
 - No `box-shadow`, no `linear-gradient`, no `position` properties.
 
 Important insertion instruction for the final answer:
 
 1. Paste the full article fragment into WeChat.
-2. Click once in the blank inner area of the frame.
+2. Click once in the blank area of the frame until the caret is active.
 3. Insert or paste the photo directly. Do not select all, press Backspace, or delete the invisible anchor first.
-4. Check that the image touches the intended inner edge and that the outer frame remains.
+4. Check that the image remains inside the same frame with no full-height blank block above or below it.
 
 Keep placement labels and filename maps in the delivery guide or HTML comments, outside the editable image container. Do not place a large padded text block around the future image; the frame should provide the only persistent padding.
 
@@ -248,7 +248,7 @@ Rules:
 - For a 4:5 portrait wall, use a square matrix of 4:5 crops: `3 x 3` for up to 9 people or `4 x 4` for up to 16. Split larger groups across two labeled walls instead of shrinking faces below mobile readability.
 - Keep names outside the composite unless the exported wall has been tested at phone width and the smallest label remains readable. Photo-only walls plus one short caption are usually cleaner.
 - Small square assets in dark footers (QR codes, badges, poster thumbnails) should use a **narrow centered frame** (`width:170px;max-width:100%` works well), not a full-width row wrapper.
-- Do not create photo space with huge top/bottom text padding. Use the protected-anchor frame selected for the article's visual register and put replacement instructions outside the final article HTML.
+- Do not create photo space with huge top/bottom text padding. Use the editable-paragraph-anchor frame selected for the article's visual register and put replacement instructions outside the final article HTML.
 
 ### Manual horizontal swipe gallery exception
 
@@ -263,7 +263,7 @@ Use a manual swipe gallery only when the project explicitly prefers individual i
 - Mobile WebViews often hide the native horizontal scrollbar while idle. Add an always-visible HTML cue below the gallery: a flat track, a contrasting short thumb, and a concise left/right swipe label. Build it from flow `section` elements and solid fills.
 - Without JavaScript or scroll-linked CSS, that custom thumb is a static affordance, not live progress. Do not imply that it tracks the current slide.
 - Keep the final count explicit before building the strip. Each placeholder should carry a stable sequence number and source filename so replacements do not change item order.
-- Keep one protected `&nbsp;` anchor inside every blank gallery item. Paste each photo without first deleting or selecting the item's blank container.
+- Keep one direct-child 1px `<p>` with a single `&nbsp;` inside every blank gallery item. Paste each photo without first deleting or selecting the anchor.
 - Use a consistent 4:5 crop. Avoid names or long captions inside narrow cards unless they remain readable at 320px.
 - Do not combine the swipe exception with tables, grid, scripts, or local image paths.
 - A published reference may prove the mechanism is possible, but it does not prove a new block will survive editing. Paste the exact final block with real images into the draft box and test on a phone.
@@ -301,7 +301,7 @@ Before handing over the HTML, run this mode-aware checklist. **Do not skip it.**
 5. **Tag balance** - `<section>`, `<p>`, and `<span>` open/close counts match.
 6. **Steady mode** - gradients and shadows are absent; flex, inline-block, large radii, and documented swipe overflow remain allowed.
 7. **Creative mode** - every gradient has a solid background fallback on the same element; shadows are nonessential; the fragment remains organized when both effects are removed.
-8. **Flex, overflow, and photo anchors** - compact flex rows do not squeeze text at 320px; swipe strips use intentional `overflow-x:auto`, stable item counts, and no autoplay claim; every manual image slot retains one invisible protected anchor and has no padded instruction paragraph.
+8. **Flex, overflow, and photo anchors** - compact flex rows do not squeeze text at 320px; swipe strips use intentional `overflow-x:auto`, stable item counts, and no autoplay claim; every manual image slot keeps frame styles on a `section`, uses one direct-child 1px `<p>` anchor, and has no padded instruction paragraph.
 9. **Top spacing** - the first visible screen reads as an intentional opener; no accidental stack of empty wrapper, top margin, and top padding.
 10. **Width alignment** - comparable blocks share deliberate baselines, and no fixed width exceeds the mobile column.
 11. **Risk-word scan** - review every project-specific promise, outcome claim, and institutional term; allow a term in a disclaimer only when its use is intentional.
@@ -404,7 +404,7 @@ If `SectionOpen != SectionClose`, `POpen != PClose`, or `SpanOpen != SpanClose`,
 
 - **The WeChat editor's empty top space comes from the editor's default spacing**, not from your content. Don't add `padding-top` to compensate.
 - **Local image paths silently break the whole block.** If the user reports "photo frame disappeared", check whether there's an `<img src="local...">` that failed to load and took the parent container with it.
-- **Deleting the placeholder can delete the photo frame.** A text paragraph may be the editor's only surviving child, so selecting the entire paragraph can normalize away the wrapper. Use a blank `min-height` container with a zero-size `&nbsp;` anchor, then paste directly without deleting first.
+- **Deleting the placeholder can delete the photo frame.** Keep the visual frame on a `min-height` section and put one unstyled 1px `<p>` anchor directly inside it; paste without deleting first. A section/span-only slot sends the image outside the frame, while putting frame height on the paragraph makes WeChat clone blank blocks above and below the image.
 - **Dense three-column speaker walls are fragile in WeChat.** If each card carries a real photo plus text, the editor may clip the next card or leave a partial column edge. Default to single-column speaker cards unless a denser layout has been verified in the editor with real images.
 - **Tables can deform even when the browser preview is perfect.** WeChat may inject horizontal scrolling and reset `td` widths. Replace asymmetric tables with `section` / `p` / `span` flow; do not keep layering width fixes onto the table.
 - **Footer QR placeholders can accidentally expand to full width.** Keep the square asset inside a narrow centered `section`, not a row-level layout wrapper.

@@ -40,19 +40,19 @@ Treat cover art and article art as different compositions:
 - A body image has no title overlay and must look balanced edge to edge. Fill intentional cover whitespace with real scene content when adapting it for the article.
 - Generated body art supports the theme; it does not prove employment conditions, official affiliation, or workplace reality.
 
-## Protected-anchor image frame
+## Editable-paragraph image frame
 
-Keep the persistent inner image container unpadded and give it one invisible editing anchor:
+Keep the persistent inner image container unpadded and give it one direct-child paragraph anchor:
 
 ```html
 <section style="box-sizing:border-box;margin:20px 8px 0;padding:8px;background:#FF6B5E;border:2px solid #151836;border-radius:8px;overflow:hidden;">
-  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;background:#FFFDF8;border:2px solid #151836;border-radius:4px;text-align:center;overflow:hidden;font-size:0;line-height:0;">
-    <span style="font-size:0;line-height:0;">&nbsp;</span>
+  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;background:#FFFDF8;border:2px solid #151836;border-radius:4px;text-align:center;overflow:hidden;">
+    <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
   </section>
 </section>
 ```
 
-Tell the publisher to click the blank inner area and insert the image directly without selecting or deleting anything first. The invisible `&nbsp;` keeps the editable wrapper alive while the image touches the inner border. Put filenames and placement instructions in the delivery guide or HTML comments. Do not put decorative badges such as `TEAM & STORE` inside the photo frame unless the brief explicitly asks for one.
+Tell the publisher to click the blank inner area and insert the image directly without selecting or deleting anything first. The 1px paragraph provides a real caret target while the containing section keeps the frame height and survives insertion. Do not move `min-height`, border, padding, or background onto that paragraph. Put filenames and placement instructions in the delivery guide or HTML comments. Do not put decorative badges such as `TEAM & STORE` inside the photo frame unless the brief explicitly asks for one.
 
 ## High-priority recruitment facts
 
@@ -81,7 +81,7 @@ Run the standard `SKILL.md` article audit, then check 375px and 390px previews. 
 
 - priority bands fit without clipping;
 - salary stays on one line;
-- inserted body art touches the inner frame after direct paste and the protected anchor remains;
+- inserted body art stays inside the frame after direct paste, with no full-height blank block above or below it;
 - the QR placeholder stays narrow;
 - contact and address copy wrap without horizontal overflow;
 - the final WeChat fragment has zero local image paths and balanced `section`, `p`, and `span` tags.
