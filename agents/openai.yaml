@@ -1,0 +1,4 @@
+interface:
+  display_name: "WeChat Original Article Designer"
+  short_description: "Original WeChat article styles, inline CSS, and publishing QA"
+  default_prompt: "Use $wechat-article-designer to synthesize a unique content-driven WeChat article style and deliver audited publishable HTML."

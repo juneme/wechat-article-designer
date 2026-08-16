@@ -1,0 +1,60 @@
+# WeChat Article Designer
+
+一套面向微信公众号文章的 Codex Skill。它从 24 种内部视觉 DNA 中按内容重新合成原创版式，并输出适合公众号编辑器的移动端 HTML、图片占位、封面方案与发布前审查结果。
+
+![24-style visual DNA gallery](assets/previews/template-gallery.png)
+
+## 核心能力
+
+- 24 种可组合视觉 DNA，不把模板换色当作原创设计。
+- Steady / Creative 两种交付模式与明确的兼容性降级规则。
+- Paper Cut Artbook、Contour Field Notes、Still-frame Cinema 等艺术编辑方向。
+- 手机优先排版、照片占位、手动横向滑块和发布前风险审查。
+- 公众号正文保持静态，不包含动效或状态性交互。
+
+## 安装
+
+```powershell
+git clone https://github.com/juneme/wechat-article-designer.git "$HOME/.codex/skills/wechat-article-designer"
+```
+
+重新启动 Codex，或开启一个新任务让 skill 被重新发现。
+
+## 使用
+
+```text
+$wechat-article-designer 根据这篇稿件设计一个有纸艺画册感、适合公众号发布的原创版本。
+```
+
+没有明确指定模板时，skill 会根据主题、受众、图片职责、信息密度和期望行动，从多个 DNA 维度重新合成设计指纹。只有用户明确要求浏览风格时，才展示 24 种 DNA 总览。
+
+## 目录
+
+```text
+wechat-article-designer/
+├── SKILL.md
+├── GALLERY.md
+├── agents/
+├── assets/
+├── references/
+└── scripts/
+```
+
+## 验证
+
+在已安装 Codex 内置 `skill-creator` 的环境中运行：
+
+```powershell
+$env:PYTHONUTF8='1'
+python "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .
+```
+
+## 发布边界
+
+- 最终公众号正文不使用脚本、事件处理器、外部样式表或本地图片路径。
+- 手动横向滑块是经过保留的静态例外，必须同时提供可读的单列降级结构。
+- 浏览器预览通过不等于公众号编辑器通过；真实发布仍需草稿箱粘贴和手机预览。
+
+## License
+
+This repository does not currently grant an open-source license. Public visibility does not imply permission to redistribute or modify the work.
