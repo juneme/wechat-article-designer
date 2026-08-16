@@ -40,19 +40,19 @@ Treat cover art and article art as different compositions:
 - A body image has no title overlay and must look balanced edge to edge. Fill intentional cover whitespace with real scene content when adapting it for the article.
 - Generated body art supports the theme; it does not prove employment conditions, official affiliation, or workplace reality.
 
-## Paste-safe image frame
+## Protected-anchor image frame
 
-Put spacing on the placeholder paragraph, never on the persistent inner image container:
+Keep the persistent inner image container unpadded and give it one invisible editing anchor:
 
 ```html
 <section style="box-sizing:border-box;margin:20px 8px 0;padding:8px;background:#FF6B5E;border:2px solid #151836;border-radius:8px;overflow:hidden;">
-  <section style="box-sizing:border-box;margin:0;padding:0;background:#FFFDF8;border:2px solid #151836;border-radius:4px;text-align:center;overflow:hidden;">
-    <p style="margin:0;padding:34px 14px;font-size:14px;line-height:1.8;font-weight:900;color:#151836;">招聘主题图片位<br><span style="font-size:12px;font-weight:400;color:#66677B;">删除本段，在此插入图片</span></p>
+  <section style="box-sizing:border-box;min-height:96px;margin:0;padding:0;background:#FFFDF8;border:2px solid #151836;border-radius:4px;text-align:center;overflow:hidden;font-size:0;line-height:0;">
+    <span style="font-size:0;line-height:0;">&nbsp;</span>
   </section>
 </section>
 ```
 
-After the publisher deletes the entire placeholder paragraph and inserts the image at the same cursor, the image touches the inner border. Do not put decorative badges such as `TEAM & STORE` inside the photo frame unless the brief explicitly asks for one.
+Tell the publisher to click the blank inner area and insert the image directly without selecting or deleting anything first. The invisible `&nbsp;` keeps the editable wrapper alive while the image touches the inner border. Put filenames and placement instructions in the delivery guide or HTML comments. Do not put decorative badges such as `TEAM & STORE` inside the photo frame unless the brief explicitly asks for one.
 
 ## High-priority recruitment facts
 
@@ -81,7 +81,7 @@ Run the standard `SKILL.md` article audit, then check 375px and 390px previews. 
 
 - priority bands fit without clipping;
 - salary stays on one line;
-- inserted body art touches the inner frame after placeholder deletion;
+- inserted body art touches the inner frame after direct paste and the protected anchor remains;
 - the QR placeholder stays narrow;
 - contact and address copy wrap without horizontal overflow;
 - the final WeChat fragment has zero local image paths and balanced `section`, `p`, and `span` tags.

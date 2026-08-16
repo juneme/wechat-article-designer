@@ -79,13 +79,13 @@ Use an HTML placeholder when the editor will receive a real team, store, or work
 
 ```html
 <section style="margin:16px 8px 0;padding:10px;box-sizing:border-box;border:1px solid #DDE1EF;border-radius:20px;background:#FFFFFF;">
-  <section style="padding:38px 14px;box-sizing:border-box;border-radius:14px;background:#E7F1FF;text-align:center;">
-    <p style="margin:0;color:#172153;font-size:14px;line-height:1.8;font-weight:800;">删除本行文字，在此插入团队或工作场景照片</p>
+  <section style="min-height:96px;margin:0;padding:0;box-sizing:border-box;border-radius:14px;background:#E7F1FF;text-align:center;overflow:hidden;font-size:0;line-height:0;">
+    <span style="font-size:0;line-height:0;">&nbsp;</span>
   </section>
 </section>
 ```
 
-Tell the publisher to paste the full article first, delete only the placeholder sentence, and insert the photo at that cursor. Do not embed a local file path. Keep a QR-code placeholder narrow and centered so it cannot expand into a full-width block.
+Tell the publisher to paste the full article, click the blank inner area, and insert the photo directly without selecting or deleting the invisible anchor. Keep placement instructions outside the final image slot. Do not embed a local file path. Keep a QR-code placeholder narrow and centered so it cannot expand into a full-width block.
 
 ## Cover generation
 

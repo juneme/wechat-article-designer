@@ -34,6 +34,7 @@ Suggested fallback palette when no authoritative visual exists:
 ## Photo Treatment
 
 - Use square or 4-8px-radius frames with a warm-neutral placeholder surface.
+- Keep one zero-size `&nbsp;` protected anchor inside every blank image slot. Insert photos directly into the blank area without deleting the anchor first.
 - Keep captions factual and short. Do not embed project-specific filenames in reusable markup.
 - For large participant sets, prefer one finished collage bitmap or verified single-column cards over a very long horizontal strip.
 
