@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2 - 2026-08-18
+
+- Enforce an audience boundary so publishable articles cannot inherit chat history, feedback, approval prompts, local paths, or assistant work narration.
+- Add a deterministic preflight scanner for common Chinese and English conversation-residue patterns.
+
 ## 1.1.1 - 2026-08-18
 
 - Allow direct remote HTTP console access for deployments without a domain or SSH tunnel.

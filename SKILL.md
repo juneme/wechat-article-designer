@@ -1,6 +1,6 @@
 ---
 name: wechat-article-designer
-description: "Design, revise, and troubleshoot WeChat Official Account (微信公众号) articles with content-driven original style synthesis from a 24-style internal DNA library, mobile-first inline CSS, photo placeholders, covers, and publishing QA. Use for 微信公众号 / WeChat article HTML, original article design, image handling, editor compatibility, cover generation, uploading images through a WeChat console API, replacing local images with WeChat-hosted URLs, validating final article JSON, or writing a completed article to the WeChat draft box as the final step of a requested direct-publishing workflow. Brand-agnostic across topics, audiences, and color palettes."
+description: "Design, revise, and troubleshoot audience-facing WeChat Official Account (微信公众号) articles with content-driven original style synthesis from a 24-style internal DNA library, mobile-first inline CSS, photo placeholders, covers, and publishing QA. Use for 微信公众号 / WeChat article HTML, original article design, image handling, editor compatibility, cover generation, preventing chat or work-process leakage into publishable copy, uploading images through a WeChat console API, replacing local images with WeChat-hosted URLs, validating final article JSON, or writing a completed article to the WeChat draft box as the final step of a requested direct-publishing workflow. Brand-agnostic across topics, audiences, and color palettes."
 ---
 
 # WeChat Article Designer
@@ -77,6 +77,17 @@ Create a WeChat-ready article fragment, not an app or ordinary web page.
 9. **Self-audit before delivery** (see "Self-Audit Before Delivery" section below).
 10. Validate before finishing: no scripts, no style blocks, matched open/close tags, expected image count, brand-name consistency, and image-role accuracy.
 
+## Audience Boundary
+
+Treat the conversation as source material, never as publishable copy. Write every article so it stands alone for its target readers without access to the user's chat, files, approvals, or work history.
+
+1. Define the target reader, narrator, and intended action before drafting.
+2. Remove conversation residue such as “根据你的要求”, “我们刚才”, “我已经为你”, user feedback, approval requests, local paths, test status, and descriptions of what the assistant did.
+3. Convert operator history into reader value. Write “系统会自动校验文章” instead of “我刚刚帮你校验了文章”.
+4. Use second-person language only as deliberate reader address, never as a reference to the current user or their private interaction.
+5. When the topic itself is a Codex or AI tutorial, use generic, reusable prompt examples. Do not quote the user's live prompt or reproduce the surrounding conversation unless the user explicitly supplies approved quotation copy.
+6. Run `scripts/audit_audience_boundary.py` on the final HTML or article JSON. Treat every finding as a delivery blocker until the copy is rewritten or intentionally approved as quoted source material.
+
 ## Resource routes
 
 - **New full article**: read [`references/original-style-synthesis.md`](references/original-style-synthesis.md) and [`GALLERY.md`](GALLERY.md), build a unique design fingerprint, and load two to four source routes across different dimensions.
@@ -93,6 +104,7 @@ Create a WeChat-ready article fragment, not an app or ordinary web page.
 - **2.35:1 recruitment cover**: run `scripts/generate_wechat_cover.py`; pass final Chinese copy explicitly so the bitmap contains exact approved text.
 - **General sections and troubleshooting**: use `references/snippets.md`. For government-guided or public-interest work, use `references/modern-institutional-public-interest.md` instead of the recruitment pattern.
 - **Console API image upload or draft creation**: read `references/direct-publishing.md`, then use `scripts/wechat_console_api.py`. Treat image upload and draft creation as separate phases. For a requested full direct-publishing workflow, create the draft automatically after validation without a second confirmation.
+- **Conversation-derived source material**: enforce the Audience Boundary above and run `scripts/audit_audience_boundary.py` before delivery or draft creation.
 - **Clean poster-derived card systems**: use the "White-Interior Accent-Edge Grouped Card" in `references/snippets.md` when the authoritative visual has two or three bright accent colors but the article needs a light, reliable reading surface.
 
 ## Customizing for Your Brand
@@ -324,6 +336,7 @@ Before handing over the HTML, run this mode-aware checklist. **Do not skip it.**
 14. **Originality** - the result passes `references/original-style-synthesis.md`: no full starter skeleton, at least three content-specific decisions, at least two structural departures from the nearest library example, and no reused example names, dates, claims, prices, filenames, or mechanically repeated card stack.
 15. **Phone preview** - inspect approximately 320px, 375px, and 390px widths; for Creative mode, also verify the exact final fragment in the real WeChat phone preview when available.
 16. **Direct-publishing assets** - every `<img src>` uses an HTTPS `mmbiz.qpic.cn` `article_url`, the cover uses a permanent-material `media_id`, and the final JSON passes `validate-draft` before any submission.
+17. **Audience boundary** - the article addresses its intended readers and contains no chat history, user-feedback residue, assistant work narration, local paths, approval prompts, or private operational context. Run `audit_audience_boundary.py` and resolve every finding.
 
 Fix deterministic failures before delivery. Do not make the user discover tag, path, overflow, or fallback defects for you.
 

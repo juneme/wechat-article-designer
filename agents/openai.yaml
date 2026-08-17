@@ -1,4 +1,4 @@
 interface:
   display_name: "WeChat Original Article Designer"
   short_description: "Design WeChat articles, upload images, and create drafts"
-  default_prompt: "Use $wechat-article-designer to design and audit a WeChat article, upload final images through the configured console API when needed, and automatically create a validated draft when I request the full direct-publishing workflow."
+  default_prompt: "Use $wechat-article-designer to create an audience-facing WeChat article without chat-process leakage, audit the final copy, upload assets when needed, and complete the requested draft workflow."

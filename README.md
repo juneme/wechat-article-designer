@@ -10,6 +10,7 @@
 - Steady / Creative 两种交付模式与明确的兼容性降级规则。
 - Paper Cut Artbook、Contour Field Notes、Still-frame Cinema 等艺术编辑方向。
 - 手机优先排版、照片占位、手动横向滑块和发布前风险审查。
+- 强制区分聊天上下文与公开文章，发布前自动扫描“根据你的要求”“我已经为你”等对话残留。
 - 照片框采用实测通过的可编辑段落锚点：视觉样式和高度留在 `section`，1px `p` 只负责提供光标，点击空白框即可直接粘贴。
 - 公众号正文保持静态，不包含动效或状态性交互。
 - 通过独立服务器 API 上传正文图片和封面；选择完整直发流程后，校验通过即自动写入微信公众号草稿箱，无需二次确认。
@@ -61,6 +62,7 @@ wechat-article-designer/
 ```powershell
 $env:PYTHONUTF8='1'
 python "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .
+python scripts/audit_audience_boundary.py article.html
 ```
 
 ## 发布边界
