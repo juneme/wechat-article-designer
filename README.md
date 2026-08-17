@@ -12,6 +12,7 @@
 - 手机优先排版、照片占位、手动横向滑块和发布前风险审查。
 - 照片框采用实测通过的可编辑段落锚点：视觉样式和高度留在 `section`，1px `p` 只负责提供光标，点击空白框即可直接粘贴。
 - 公众号正文保持静态，不包含动效或状态性交互。
+- 通过独立服务器 API 上传正文图片和封面，并在用户明确确认后写入微信公众号草稿箱。
 
 ## 安装
 
@@ -20,6 +21,16 @@ git clone https://github.com/juneme/wechat-article-designer.git "$HOME/.codex/sk
 ```
 
 重新启动 Codex，或开启一个新任务让 skill 被重新发现。
+
+直发模式还需要在运行 Codex 的环境中配置：
+
+```text
+WECHAT_CONSOLE_URL=http://你的控制台地址
+WECHAT_IMAGE_API_KEY=服务器 AI_API_KEY
+WECHAT_PUBLISH_API_KEY=服务器 PUBLISH_API_KEY
+```
+
+完整流程见 `references/direct-publishing.md`。密钥不得写入 Skill、文章 JSON 或公开仓库。
 
 ## 使用
 
@@ -59,4 +70,4 @@ python "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .
 
 ## License
 
-This repository does not currently grant an open-source license. Public visibility does not imply permission to redistribute or modify the work.
+MIT License. See `LICENSE` in the project root.

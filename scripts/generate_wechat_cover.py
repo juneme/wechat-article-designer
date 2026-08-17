@@ -9,7 +9,6 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-
 BASE_WIDTH = 1175
 BASE_HEIGHT = 500
 
@@ -166,7 +165,9 @@ def main() -> None:
     regular_path = resolve_font(args.font_regular, bold=False)
     bold_path = resolve_font(args.font_bold, bold=True)
     width, height = args.width, args.height
-    s = lambda value: scaled(value, width)
+
+    def s(value: int) -> int:
+        return scaled(value, width)
 
     canvas = Image.new("RGB", (width, height), args.background)
     draw = ImageDraw.Draw(canvas)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 - 2026-08-17
+
+- Add console API commands for body images, permanent cover material, validation, and draft creation.
+- Require explicit user confirmation before creating a WeChat draft.
+- Handle pending and ambiguous results without reporting false success or automatically retrying.
+- Upload images one at a time to keep client memory use bounded.
+
 ## 1.0.2 - 2026-08-16
 
 - Replace section/span-only photo anchors with a real-editor-verified direct-child 1px paragraph anchor.

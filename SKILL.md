@@ -1,11 +1,24 @@
 ---
 name: wechat-article-designer
-description: "Design, revise, and troubleshoot WeChat Official Account (微信公众号) articles with content-driven original style synthesis from a 24-style internal DNA library, Steady and Creative delivery modes, evidence-backed inline CSS including flex, inline-block, manual swipe overflow, gradients, shadows, and large radii, mobile-first layouts, photo placeholders, covers, and publishing QA. Use for 微信公众号 / WeChat article HTML, new article creation, unique or bold original design, artbook and editorial collage directions, recruitment and public-interest posts, image slots, editor compatibility, cover generation, or direct-publishing preparation. Brand-agnostic across topics, audiences, and color palettes."
+description: "Design, revise, and troubleshoot WeChat Official Account (微信公众号) articles with content-driven original style synthesis from a 24-style internal DNA library, mobile-first inline CSS, photo placeholders, covers, and publishing QA. Use for 微信公众号 / WeChat article HTML, original article design, image handling, editor compatibility, cover generation, uploading images through a WeChat console API, replacing local images with WeChat-hosted URLs, validating final article JSON, or explicitly writing a completed article to the WeChat draft box. Brand-agnostic across topics, audiences, and color palettes."
 ---
 
 # WeChat Article Designer
 
 > A brand-agnostic, industry-agnostic skill for producing WeChat 公众号 article HTML that renders correctly inside the WeChat editor and on mobile. This skill does not assume any specific brand, audience, industry, or topic — it works for any WeChat publisher.
+
+## Direct Publishing Workflow
+
+Use this route when the user wants a finished article sent through the configured WeChat console API. Read `references/direct-publishing.md` before running any API command.
+
+1. Confirm `WECHAT_CONSOLE_URL`, `WECHAT_IMAGE_API_KEY`, and `WECHAT_PUBLISH_API_KEY` are available in the environment. Never place keys, AppSecret values, or bearer headers in article files, source code, screenshots, or chat output.
+2. Finalize the selected local body images, then upload them with `scripts/wechat_console_api.py upload-images --mode article`. Keep the returned `source_path` to `article_url` mapping.
+3. Build the final HTML with real `<img src="https://mmbiz.qpic.cn/...">` elements using only the returned `article_url` values. Do not use 1px manual anchors in direct-publishing mode.
+4. Finalize the 2.35:1 cover and upload it with `scripts/wechat_console_api.py upload-cover`. Put the returned permanent `media_id` in `thumb_media_id`.
+5. Create the article JSON and run `validate-draft`. Fix every local validation error before submission.
+6. Run `create-draft` only when the user explicitly asks to write the completed article to the WeChat draft box. Report the returned draft `media_id`, `request_id`, and whether the result was cached.
+
+Do not call `create-draft` merely because the user asked for HTML, a preview, an image upload, or direct-publishing preparation. The existing manual placeholder workflow remains the default when the user plans to paste and complete the article in the WeChat editor.
 
 ## New-Creation Originality Gate
 
@@ -41,7 +54,7 @@ After the new-creation originality gate, use this path to produce a publishable 
 5. **Pick the color tokens**: when a main visual is supplied, sample it first and map its real colors to `{{BRAND_*}}`; use fallback colors only when no authoritative visual exists.
 6. **Compose for the story**: create an opener, section progression, image rhythm, and closing that differ structurally from the nearest library example.
 7. **Customize copy**: keep mobile headings and content blocks readable rather than enforcing one fixed character count.
-8. **Add photos**: use placeholders that match the new design fingerprint; let the user upload photos in the WeChat editor. Do not embed local paths.
+8. **Add photos**: for manual delivery, use placeholders that match the new design fingerprint; for direct publishing, upload final images first and use the returned WeChat `article_url` values. Never embed local paths.
 9. **Run the mode-aware and originality self-audits** below. Fix any failure before delivery.
 10. **Wrap with copy boundaries**: add `<!-- 微信公众号复制开始 -->` / `<!-- 微信公众号复制结束 -->` markers.
 
@@ -79,6 +92,7 @@ Create a WeChat-ready article fragment, not an app or ordinary web page.
 - **Hard-edge dopamine recruitment article**: read [`references/dopamine-editorial-recruitment.md`](references/dopamine-editorial-recruitment.md), then start from [`assets/dopamine-editorial-recruitment-article.html`](assets/dopamine-editorial-recruitment-article.html). Keep the final WeChat fragment single-column and use editable-paragraph anchors inside image placeholders so inserted images stay inside the frame without deleting its wrapper.
 - **2.35:1 recruitment cover**: run `scripts/generate_wechat_cover.py`; pass final Chinese copy explicitly so the bitmap contains exact approved text.
 - **General sections and troubleshooting**: use `references/snippets.md`. For government-guided or public-interest work, use `references/modern-institutional-public-interest.md` instead of the recruitment pattern.
+- **Console API image upload or draft creation**: read `references/direct-publishing.md`, then use `scripts/wechat_console_api.py`. Treat image upload and draft creation as separate phases; draft creation requires an explicit user request.
 - **Clean poster-derived card systems**: use the "White-Interior Accent-Edge Grouped Card" in `references/snippets.md` when the authoritative visual has two or three bright accent colors but the article needs a light, reliable reading surface.
 
 ## Customizing for Your Brand
@@ -309,6 +323,7 @@ Before handing over the HTML, run this mode-aware checklist. **Do not skip it.**
 13. **Institutional evidence** - government designations, “唯一” claims, official logos, seals, certificates, incentives, and generated images match verified scope and cannot be mistaken for fabricated proof.
 14. **Originality** - the result passes `references/original-style-synthesis.md`: no full starter skeleton, at least three content-specific decisions, at least two structural departures from the nearest library example, and no reused example names, dates, claims, prices, filenames, or mechanically repeated card stack.
 15. **Phone preview** - inspect approximately 320px, 375px, and 390px widths; for Creative mode, also verify the exact final fragment in the real WeChat phone preview when available.
+16. **Direct-publishing assets** - every `<img src>` uses an HTTPS `mmbiz.qpic.cn` `article_url`, the cover uses a permanent-material `media_id`, and the final JSON passes `validate-draft` before any submission.
 
 Fix deterministic failures before delivery. Do not make the user discover tag, path, overflow, or fallback defects for you.
 
@@ -330,16 +345,26 @@ Build the table by grepping the article for any term that implies an outcome, a 
 
 ## Image Workflow
 
-When local photos are present:
+When local photos are present, first choose the delivery route.
+
+For manual editor delivery:
 
 1. List image files with `rg --files` or a directory listing.
 2. Inspect each image visually.
 3. Inspect the supplied main visual first and record the sampled palette before styling the article.
 4. Assign each photo a narrative role, such as opener, environment, interaction, detail, portrait wall, or closing group image.
-5. If using HTML placeholders, do not put the actual images into the final WeChat fragment unless the user explicitly wants prefilled images.
+5. Use HTML placeholders and let the user insert photos in the WeChat editor. Do not put local file paths into the final fragment.
 6. If using baked frames, run the script and reference the framed outputs.
-7. Separate evidence images from supporting illustrations. A real document or real service photo can support a factual claim; an AI-generated illustration cannot.
-8. For government/public-interest illustrations, prohibit readable text, official emblems, seals, certificates, flags, brand-name rendering, and watermarks unless a verified asset is supplied as an explicit input.
+
+For direct publishing:
+
+1. Perform the same inspection and narrative-role assignment before uploading anything.
+2. Upload final body images with `mode=article`; do not use `material_url` as a body image substitute.
+3. Match each returned item through `source_path` and insert its `article_url` into the intended real `<img>` element.
+4. Upload the cover separately with `upload-cover` and use its `media_id`, not its URL, as `thumb_media_id`.
+5. Keep the output HTML free of manual 1px anchors and local or relative image paths.
+
+For both routes, separate evidence images from supporting illustrations. A real document or real service photo can support a factual claim; an AI-generated illustration cannot. For government/public-interest illustrations, prohibit readable text, official emblems, seals, certificates, flags, brand-name rendering, and watermarks unless a verified asset is supplied as an explicit input.
 
 Use `references/snippets.md` when a reusable WeChat HTML snippet, troubleshooting wording, or final checklist is needed.
 
