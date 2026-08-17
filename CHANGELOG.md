@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 - 2026-08-17
+## 1.1.0 - 2026-08-18
 
 - Add console API commands for body images, permanent cover material, validation, and draft creation.
 - Require explicit user confirmation before creating a WeChat draft.
