@@ -7,14 +7,14 @@ Use this reference only when article assets or a finished article must pass thro
 Read configuration from the process environment:
 
 ```text
-WECHAT_CONSOLE_URL=https://photos.example.com
+WECHAT_CONSOLE_URL=http://server-ip:8787
 WECHAT_IMAGE_API_KEY=the image API bearer key
 WECHAT_PUBLISH_API_KEY=the independent draft API bearer key
 ```
 
 `WECHAT_IMAGE_API_KEY` must contain the same secret as the console server's `AI_API_KEY`. `WECHAT_PUBLISH_API_KEY` must contain the same secret as the server's `PUBLISH_API_KEY`. The different client-side names make each key's purpose explicit; they do not create new server credentials.
 
-Never store these values in the Skill, article JSON, generated HTML, shell history examples, screenshots, or chat output. Use HTTPS for a remote server. Plain HTTP is accepted by the client only for localhost.
+Never store these values in the Skill, article JSON, generated HTML, shell history examples, screenshots, or chat output. The client accepts both HTTP and HTTPS remote console URLs. HTTP is intended for deployments that do not have a domain yet and works directly without an SSH tunnel, but it sends bearer keys and article data without transport encryption. Keep the structured warning in command output and enable HTTPS when the deployment is ready.
 
 Check connectivity without exposing key values:
 
@@ -22,7 +22,7 @@ Check connectivity without exposing key values:
 python scripts/wechat_console_api.py status
 ```
 
-The command reports whether each local key is configured, but never prints the keys.
+The command reports whether each local key is configured, but never prints the keys. For a remote HTTP URL, a successful result includes a `warnings` entry instead of blocking the request.
 
 ## 1. Upload Body Images
 
@@ -82,13 +82,15 @@ Validation enforces the server contract: title up to 32 characters, author up to
 
 ## 4. Create the Draft
 
-This is the only mutating publishing command. Run it only after the user explicitly asks to write the completed article to the WeChat draft box:
+This is the only mutating command in the direct-publishing workflow. When the user requests full direct publishing or delivery to the WeChat draft box, run it automatically after `validate-draft` succeeds; do not ask for a second confirmation:
 
 ```powershell
 python scripts/wechat_console_api.py create-draft --article '.\article.json'
 ```
 
-Success returns a draft `media_id`, the `request_id`, a `cached` flag, and server validation counts. A cached response is a successful idempotent replay, not a second draft.
+Success returns a draft `media_id`, the `request_id`, a `cached` flag, and server validation counts. A cached response is a successful idempotent replay, not a second draft. Creating a draft does not publish or mass-send the article; final publication remains a separate manual or scan-confirmed action in the WeChat backend.
+
+Do not run `create-draft` for preview-only, HTML-only, image-upload-only, or preparation-only requests. If the user chose the full direct-publishing workflow, proceed automatically unless they explicitly ask to stop before draft creation.
 
 ## Failure Handling
 

@@ -72,12 +72,18 @@ def _base_url() -> str:
     parsed = urlsplit(value)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise ConsoleApiError("WECHAT_CONSOLE_URL must be an absolute HTTP(S) URL")
-    hostname = (parsed.hostname or "").lower()
-    if parsed.scheme != "https" and hostname not in {"localhost", "127.0.0.1", "::1"}:
-        raise ConsoleApiError(
-            "WECHAT_CONSOLE_URL must use HTTPS unless the console is local"
-        )
     return value
+
+
+def _transport_warnings() -> list[str]:
+    parsed = urlsplit(_base_url())
+    hostname = (parsed.hostname or "").lower()
+    if parsed.scheme == "http" and hostname not in {"localhost", "127.0.0.1", "::1"}:
+        return [
+            "Remote HTTP is not encrypted; API keys and article data may be "
+            "intercepted. Enable HTTPS when possible."
+        ]
+    return []
 
 
 def _decode_json(raw: bytes, context: str) -> Any:
@@ -380,9 +386,11 @@ def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
                 os.environ.get("WECHAT_PUBLISH_API_KEY", "").strip()
             ),
             "server": server,
+            "warnings": _transport_warnings(),
         }, 0
     if args.command == "upload-images":
         result = _upload_images(_resolve_images(args.images), args.mode)
+        result["warnings"] = _transport_warnings()
         has_errors = bool(result.get("error_count")) or any(
             item.get("status") != "complete"
             or bool(item.get("errors"))
@@ -407,6 +415,7 @@ def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             "media_id": item["media_id"],
             "material_url": item.get("material_url") or item.get("url"),
             "item": item,
+            "warnings": _transport_warnings(),
         }, 0
     if args.command == "validate-draft":
         draft, validation = _load_draft(args.article)
@@ -433,7 +442,13 @@ def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         if not isinstance(response, dict):
             raise ConsoleApiError("draft API returned an invalid response")
         result = dict(response)
-        result.update({"operation": "create_draft", "local_validation": validation})
+        result.update(
+            {
+                "operation": "create_draft",
+                "local_validation": validation,
+                "warnings": _transport_warnings(),
+            }
+        )
         if http_status == 202 or response.get("status") == "pending":
             return result, 2
         if (

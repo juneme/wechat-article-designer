@@ -149,6 +149,7 @@ def test_status_and_multipart_image_upload(
     assert status["server"] == {"status": "ok"}
     assert status["image_api_key_configured"] is True
     assert status["publish_api_key_configured"] is True
+    assert status["warnings"] == []
 
     first = tmp_path / "lead.jpg"
     second = tmp_path / "detail.png"
@@ -168,6 +169,7 @@ def test_status_and_multipart_image_upload(
     assert uploaded["items"][0]["article_url"].startswith(
         "https://mmbiz.qpic.cn/"
     )
+    assert uploaded["warnings"] == []
 
     uploads = [record for record in server.records if record[1] == "/api/v1/wechat-images"]
     assert len(uploads) == 2
@@ -178,6 +180,17 @@ def test_status_and_multipart_image_upload(
         assert b'name="mode"' in body and b"\r\narticle\r\n" in body
     assert b"jpeg-body" in uploads[0][3]
     assert b"png-body" in uploads[1][3]
+
+
+def test_remote_http_is_allowed_with_a_security_warning(monkeypatch) -> None:
+    monkeypatch.setenv("WECHAT_CONSOLE_URL", "http://192.0.2.10:8787")
+    client = _load_client()
+
+    assert client._base_url() == "http://192.0.2.10:8787"
+    assert client._transport_warnings() == [
+        "Remote HTTP is not encrypted; API keys and article data may be "
+        "intercepted. Enable HTTPS when possible."
+    ]
 
 
 def test_cover_upload_validation_and_draft_payload(

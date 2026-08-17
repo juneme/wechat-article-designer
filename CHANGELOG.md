@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1 - 2026-08-18
+
+- Allow direct remote HTTP console access for deployments without a domain or SSH tunnel.
+- Return a structured transport-security warning while keeping API keys out of command output.
+- Create a validated WeChat draft automatically when the user chooses the full direct-publishing workflow, without a second confirmation.
+- Keep preview-only and preparation-only requests non-mutating, and distinguish draft creation from final publication.
+
 ## 1.1.0 - 2026-08-18
 
 - Add console API commands for body images, permanent cover material, validation, and draft creation.

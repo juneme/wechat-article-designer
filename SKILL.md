@@ -1,6 +1,6 @@
 ---
 name: wechat-article-designer
-description: "Design, revise, and troubleshoot WeChat Official Account (微信公众号) articles with content-driven original style synthesis from a 24-style internal DNA library, mobile-first inline CSS, photo placeholders, covers, and publishing QA. Use for 微信公众号 / WeChat article HTML, original article design, image handling, editor compatibility, cover generation, uploading images through a WeChat console API, replacing local images with WeChat-hosted URLs, validating final article JSON, or explicitly writing a completed article to the WeChat draft box. Brand-agnostic across topics, audiences, and color palettes."
+description: "Design, revise, and troubleshoot WeChat Official Account (微信公众号) articles with content-driven original style synthesis from a 24-style internal DNA library, mobile-first inline CSS, photo placeholders, covers, and publishing QA. Use for 微信公众号 / WeChat article HTML, original article design, image handling, editor compatibility, cover generation, uploading images through a WeChat console API, replacing local images with WeChat-hosted URLs, validating final article JSON, or writing a completed article to the WeChat draft box as the final step of a requested direct-publishing workflow. Brand-agnostic across topics, audiences, and color palettes."
 ---
 
 # WeChat Article Designer
@@ -11,14 +11,14 @@ description: "Design, revise, and troubleshoot WeChat Official Account (微信�
 
 Use this route when the user wants a finished article sent through the configured WeChat console API. Read `references/direct-publishing.md` before running any API command.
 
-1. Confirm `WECHAT_CONSOLE_URL`, `WECHAT_IMAGE_API_KEY`, and `WECHAT_PUBLISH_API_KEY` are available in the environment. Never place keys, AppSecret values, or bearer headers in article files, source code, screenshots, or chat output.
+1. Confirm `WECHAT_CONSOLE_URL`, `WECHAT_IMAGE_API_KEY`, and `WECHAT_PUBLISH_API_KEY` are available in the environment. Never place keys, AppSecret values, or bearer headers in article files, source code, screenshots, or chat output. Accept both HTTP and HTTPS console URLs. When the user deliberately configured remote HTTP for a deployment without a domain, proceed directly without requiring SSH; retain and report the client's transport-security warning, and recommend HTTPS as a later hardening step.
 2. Finalize the selected local body images, then upload them with `scripts/wechat_console_api.py upload-images --mode article`. Keep the returned `source_path` to `article_url` mapping.
 3. Build the final HTML with real `<img src="https://mmbiz.qpic.cn/...">` elements using only the returned `article_url` values. Do not use 1px manual anchors in direct-publishing mode.
 4. Finalize the 2.35:1 cover and upload it with `scripts/wechat_console_api.py upload-cover`. Put the returned permanent `media_id` in `thumb_media_id`.
 5. Create the article JSON and run `validate-draft`. Fix every local validation error before submission.
-6. Run `create-draft` only when the user explicitly asks to write the completed article to the WeChat draft box. Report the returned draft `media_id`, `request_id`, and whether the result was cached.
+6. When the user requests direct publishing or delivery to the WeChat draft box, run `create-draft` immediately after the final JSON passes validation. Do not ask for a second confirmation. Report the returned draft `media_id`, `request_id`, and whether the result was cached. Treat draft creation as staging, not formal publication; final mass delivery remains a separate action in the WeChat backend.
 
-Do not call `create-draft` merely because the user asked for HTML, a preview, an image upload, or direct-publishing preparation. The existing manual placeholder workflow remains the default when the user plans to paste and complete the article in the WeChat editor.
+Do not call `create-draft` merely because the user asked for HTML, a preview, an image upload, or direct-publishing preparation. Once the user chooses the full direct-publishing workflow or draft-box delivery, create the validated draft automatically unless the user explicitly asks to stop before draft creation. The existing manual placeholder workflow remains the default when the user plans to paste and complete the article in the WeChat editor.
 
 ## New-Creation Originality Gate
 
@@ -92,7 +92,7 @@ Create a WeChat-ready article fragment, not an app or ordinary web page.
 - **Hard-edge dopamine recruitment article**: read [`references/dopamine-editorial-recruitment.md`](references/dopamine-editorial-recruitment.md), then start from [`assets/dopamine-editorial-recruitment-article.html`](assets/dopamine-editorial-recruitment-article.html). Keep the final WeChat fragment single-column and use editable-paragraph anchors inside image placeholders so inserted images stay inside the frame without deleting its wrapper.
 - **2.35:1 recruitment cover**: run `scripts/generate_wechat_cover.py`; pass final Chinese copy explicitly so the bitmap contains exact approved text.
 - **General sections and troubleshooting**: use `references/snippets.md`. For government-guided or public-interest work, use `references/modern-institutional-public-interest.md` instead of the recruitment pattern.
-- **Console API image upload or draft creation**: read `references/direct-publishing.md`, then use `scripts/wechat_console_api.py`. Treat image upload and draft creation as separate phases; draft creation requires an explicit user request.
+- **Console API image upload or draft creation**: read `references/direct-publishing.md`, then use `scripts/wechat_console_api.py`. Treat image upload and draft creation as separate phases. For a requested full direct-publishing workflow, create the draft automatically after validation without a second confirmation.
 - **Clean poster-derived card systems**: use the "White-Interior Accent-Edge Grouped Card" in `references/snippets.md` when the authoritative visual has two or three bright accent colors but the article needs a light, reliable reading surface.
 
 ## Customizing for Your Brand
