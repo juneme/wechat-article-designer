@@ -1,20 +1,20 @@
 # WeChat HTML Snippets (Brand-Agnostic)
 
-> Reusable HTML patterns for WeChat 公众号 articles. All patterns use placeholder colors (e.g. `#1f7b5d`) and placeholder copy. Replace with your brand's actual colors and content.
+> Reusable HTML patterns for WeChat 公众号 articles. All patterns use placeholder colors (e.g. `#1f7b5d`) and placeholder copy. Replace with the approved brand palette and content.
 >
-> For a quick visual reference, see the matching `SKILL.md` sections. For project-specific examples (e.g. a medical brand), see the project knowledge base.
+> For capability limits, see `creative-css-capabilities.md`. For project-specific facts and brand rules, use the project's own knowledge base.
 
 ## How to use this file
 
-1. Pick the snippets you need (the index below).
+1. Select the required snippets from the index below.
 2. Replace every `{{BRAND_*}}` token with the brand's color.
 3. Replace every `{{...}}` content placeholder (e.g. `{{TITLE_LINE_1}}`) with the actual copy.
 4. Wrap the full fragment with the copy boundary markers.
-5. Run the self-audit checklist from `SKILL.md` before delivery.
+5. Run the pre-publish checklist at the end of this file before delivery.
 
 All snippets default to `section` + `p` + `span`. Do not introduce `table`, `tbody`, `tr`, or `td` unless the exact final block has passed a documented test in the real WeChat editor.
 
-Manual image slots use the real-editor-verified editable-paragraph contract: put all visual styles and `min-height` on a `section`, then make a 1px `<p>` containing one `&nbsp;` its direct child. Click the blank frame and paste or upload directly. Never style the anchor paragraph with frame height or replace it with a span-only child. Keep filename maps and replacement instructions in the delivery guide or HTML comments, not inside the final image slot.
+Manual image slots use the real-editor-verified editable-paragraph contract: put all visual styles and `min-height` on a `section`, then add a direct-child 1px `<p>` containing one `&nbsp;`. Click the blank frame and paste or upload directly. Never style the anchor paragraph with frame height or replace the paragraph with a span-only child. Keep filename maps and replacement instructions in the delivery guide or HTML comments, not inside the final image slot.
 
 ## Index of snippets
 
@@ -63,11 +63,11 @@ Manual image slots use the real-editor-verified editable-paragraph contract: put
 | `{{BRAND_SECONDARY_TEXT}}` | `#5b6f79` | Cool supporting-text color |
 | `{{BRAND_GRID_BORDER}}` | `#d3ddd8` | Light border for compact information grids |
 
-When a main visual is supplied, sample it before using these defaults. Map the visual's light field, readable dark, dominant rule/headline color, and small accent to the tokens by role. Do not force the fallback green or an invented dark color onto an established visual. When no authoritative visual exists, use the fallback or derive a restrained accent from the brand logo.
+When a main visual is supplied, sample the visual before using these defaults. Map the light field, readable dark, dominant rule/headline color, and small accent to the tokens by role. Do not force the fallback green or an invented dark color onto an established visual. When no authoritative visual exists, use the fallback or derive a restrained accent from the brand logo.
 
 ## Copy Boundary
 
-Wrap your article in a copy boundary so the team can paste the whole fragment into the WeChat editor without manual selection.
+Wrap the article in a copy boundary so the complete fragment can enter the WeChat editor without manual selection.
 
 ```html
 <!-- 微信公众号复制开始 -->
@@ -77,11 +77,11 @@ Wrap your article in a copy boundary so the team can paste the whole fragment in
 <!-- 微信公众号复制结束 -->
 ```
 
-The `max-width:677px` matches the WeChat editor's content column on mobile. Do not change it.
+The `max-width:677px` matches the WeChat editor's content column on mobile. Keep the value unchanged.
 
 ## Rounded Editable-Paragraph Photo Placeholder
 
-Use when the user wants to paste or upload photos manually in the WeChat editor.
+Use for manual photo insertion in the WeChat editor.
 
 ```html
 <section style="box-sizing:border-box;margin:30px 8px 0;padding:10px;border-radius:30px;background:#ffffff;border:2px solid {{BRAND_PRIMARY}};overflow:hidden;">
@@ -99,9 +99,9 @@ Insertion workflow:
 3. Insert or paste the photo directly without selecting or deleting anything first.
 4. Confirm that the frame remains and the photo touches the intended inner edge.
 
-If the user sees a caret but the image does not insert, click the same blank area once more and use WeChat's image-upload command. Do not repair the slot by adding visible spaces or a padded instruction paragraph.
+If a caret appears but image insertion fails, click the same blank area once more and use WeChat's image-upload command. Do not repair the slot by adding visible spaces or a padded instruction paragraph.
 
-Use this rounded variant only when it matches the selected visual register. Do not treat 30px rounding as a universal premium default.
+Use this rounded variant only for a matching visual register. Do not treat 30px rounding as a universal premium default.
 
 ## Institutional Photo Placeholder
 
@@ -139,8 +139,8 @@ Use for a wide event photo when the page needs a little structure but should rem
 ```
 
 Design rules:
-- Click the blank editable-paragraph area and insert the photo directly. Do not delete the image section or its anchor paragraph.
-- Use one leading photo per chapter. Keep `20-28px` between its preceding copy and the frame.
+- Click the blank editable-paragraph area and insert the photo directly. Do not delete the image section or anchor paragraph.
+- Use one leading photo per chapter. Keep `20-28px` between preceding copy and the frame.
 - Keep the frame square or nearly square-cornered; let the photograph provide the visual energy.
 
 ## Event Recap Chapter Header
@@ -172,11 +172,11 @@ Use as a quiet pause after 2-3 consecutive photos or between two short narrative
 </section>
 ```
 
-Do not add explanatory copy inside the divider. Its job is rhythm, not another content layer.
+Do not add explanatory copy inside the divider. The divider controls rhythm rather than adding content.
 
 ## 4:5 Portrait Collage Wall (Single Bitmap)
 
-Use when every participant needs to appear but the user will crop and compose the portraits before insertion. The HTML holds one finished bitmap, not a grid of individual image cells.
+Use when complete participant coverage requires portrait cropping and composition before insertion. The HTML holds one finished bitmap, not a grid of individual image cells.
 
 ```html
 <section style="box-sizing:border-box;margin:30px 8px 0;padding:0;border:1px solid {{BRAND_GRID_BORDER}};border-top:4px solid {{BRAND_PRIMARY}};background:#ffffff;overflow:hidden;">
@@ -193,9 +193,9 @@ Use when every participant needs to appear but the user will crop and compose th
 
 Composition rules:
 - Crop every portrait to the same 4:5 cell ratio, then assemble a square matrix. `3 x 3` yields a 4:5 wall for up to 9 people; `4 x 4` yields a 4:5 wall for up to 16.
-- Above 16 people, use two labeled 4:5 walls. Do not reduce faces until they become thumbnails on a 375px phone.
+- Above 16 people, use two labeled 4:5 walls. Keep faces larger than thumbnail scale on a 375px phone.
 - Keep face scale, eye line, background treatment, and gutter width consistent. Put detailed names in surrounding copy or a separate list unless in-image labels remain legible at phone width.
-- Export the wall at about `1200 x 1500 px`, click the blank editable-paragraph area, and insert it directly without deleting the anchor first.
+- Export the wall at about `1200 x 1500 px`, click the blank editable-paragraph area, and insert the bitmap directly without deleting the anchor first.
 
 ## Repeated Speaker Card (Single-Column)
 
@@ -243,11 +243,11 @@ Use only when the HTML should reference an already-uploaded image directly (e.g.
 
 ```html
 <section style="box-sizing:border-box;margin:30px 8px 0;padding:10px;border-radius:30px;background:#ffffff;border:2px solid {{BRAND_PRIMARY}};overflow:hidden;">
-  <img src="https://your-cdn.example.com/photo.jpg" alt="场景照片" style="display:block;width:100%;height:auto;border-radius:22px;">
+  <img src="https://assets.example.test/photo.jpg" alt="场景照片" style="display:block;width:100%;height:auto;border-radius:22px;">
 </section>
 ```
 
-If the user copies the image alone, the frame will not follow. Copy the full HTML section or bake the frame into the image.
+Copying the image alone omits the frame. Copy the full HTML section or bake the frame into the image.
 
 ## Soft Closing Card (Border-Only)
 
@@ -289,7 +289,7 @@ Use when the sub-title needs to express more than one category (e.g. core servic
 
 Design rules:
 - 4 short actions, comma-separated, then a 破折号 and a metaphor.
-- Avoid technical/functional phrasing like "把…搬到…让您…" — it reads like an installation manual.
+- Avoid installation-manual phrasing. Describe audience outcomes instead of component movement.
 - The metaphor must be **different** from the main title's product name (avoid 驿站 if title is 健康驿站).
 - Keep total length under 30 characters for mobile readability.
 
@@ -320,7 +320,7 @@ Design rules:
 
 ## Solid-Color Anchor Block
 
-Use as a visual anchor after a list of cards. The slogan becomes a solid block with contrasting text — it pulls the eye and locks the message in memory.
+Use as a visual anchor after a list of cards. The slogan becomes a solid block with contrasting text, creating a strong memory anchor.
 
 ```html
 <section style="box-sizing:border-box;margin:30px 8px 0;padding:22px 22px 24px;background:{{BRAND_PRIMARY}};border-radius:18px;">
@@ -381,7 +381,7 @@ To build a project-specific table, grep the article for words that imply outcome
 
 ## Photo Caption Color by reader age band
 
-Photo captions in pale gray (`#8a9990`) are too pale for readers over 60. Use a semi-transparent dark text `rgba(22,34,28,0.78)` for older readers, or a lighter `rgba(22,34,28,0.58)` for younger readers. The `{{BRAND_CAPTION}}` token abstracts this choice — set its value based on the audience.
+Photo captions in pale gray (`#8a9990`) are too pale for readers over 60. Use semi-transparent dark text `rgba(22,34,28,0.78)` for older audiences, or a lighter `rgba(22,34,28,0.58)` for younger audiences. Set the `{{BRAND_CAPTION}}` token based on the audience.
 
 ```html
 <p style="margin:11px 10px 0;font-size:13px;line-height:1.7;color:{{BRAND_CAPTION}};text-align:center;">{{CAPTION}}</p>
@@ -449,7 +449,7 @@ Use for three short facts or actions. The vertical rhythm survives WeChat paste 
 </section>
 ```
 
-Keep each body to one short sentence. If the three facts are only labels, remove the body paragraphs instead of converting them to columns.
+Keep each body to one short sentence. If the three facts are only labels, remove the body paragraphs instead of converting the facts to columns.
 
 ## White-Interior Accent-Edge Grouped Card
 
@@ -477,22 +477,22 @@ Design rules:
 - Use one accent consistently for the main flow, one for time or the first item, and one for warnings or the third item.
 - Keep the outer border and row dividers neutral. Do not tint the row backgrounds.
 - Use the same `8px` horizontal margin for the title, cards, photo frames, and closing block.
-- Prefer this component over faux glass in WeChat. It does not depend on retained page backgrounds, alpha compositing, `backdrop-filter`, gradients, shadows, or positioning.
+- Prefer this component over faux glass in WeChat. The component does not depend on retained page backgrounds, alpha compositing, `backdrop-filter`, gradients, shadows, or positioning.
 
 ## Troubleshooting Wording
 
-Use these exact phrasings when answering the team about common issues:
+Use these exact diagnostics for common issues:
 
-- **Frame disappears while replacing a placeholder**: "The placeholder node was probably selected and deleted with its wrapper. Restore the editable-paragraph frame, click its blank area, and paste directly without deleting first."
+- **Frame disappears while replacing a placeholder**: "The placeholder node and wrapper were likely deleted together. Restore the editable-paragraph frame, click the blank area, and paste directly without deleting first."
 - **Frame does not travel with a copied image**: "The frame is an HTML wrapper. Copy the whole framed section or use a baked-frame PNG."
 - **Photo has too much blank space**: "A legacy padded instruction paragraph survived beside the image. Replace that slot with the editable-paragraph version and paste directly."
 - **Photo lands after the blank frame**: "The slot has no editable paragraph target. Replace the section/span-only anchor with a direct-child 1px `<p>` anchor."
-- **Blank frames remain above and below the photo**: "Frame height was applied to the editable paragraph. Move `min-height`, padding, border, and background to its containing `section`; keep the anchor paragraph at 1px."
+- **Blank frames remain above and below the photo**: "Frame height was applied to the editable paragraph. Move `min-height`, padding, border, and background to the containing `section`; keep the anchor paragraph at 1px."
 - **Photo carries background color**: "That background is baked into the bitmap. Use a clean original photo inside an HTML frame."
 - **Top of article is empty**: "The WeChat editor adds default spacing above the article body. Set the first section's padding-top to 0."
 - **Photo frame doesn't show**: "Local image paths don't work in WeChat. Use a placeholder HTML frame, then upload the photo in the editor."
 - **Speaker wall looks cut off**: "The card wall is too dense for the WeChat editor. Switch to a single-column speaker-card flow or a simpler repeated-card layout."
-- **Layout stretches or gains horizontal scrolling after paste**: "WeChat wrapped the table in a horizontal scroller and reset its cell widths. Replace the whole table with `section` / `p` / `span` flow; extra `td` width rules will not make the block reliable."
+- **Layout stretches or gains horizontal scrolling after paste**: "WeChat wrapped the table in a horizontal scroller and reset cell widths. Replace the whole table with `section` / `p` / `span` flow; extra `td` width rules will not make the block reliable."
 - **QR code area becomes full width**: "The QR placeholder inherited a row-level wrapper. Use a narrow centered `section` as the visual frame."
 
 ## Pre-publish Checklist

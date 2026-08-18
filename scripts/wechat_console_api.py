@@ -14,7 +14,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 MAX_IMAGES = 20
@@ -47,9 +47,7 @@ class _ArticleInspector(HTMLParser):
         self.errors: list[str] = []
         self.image_urls: list[str] = []
 
-    def handle_starttag(
-        self, tag: str, attrs: list[tuple[str, str | None]]
-    ) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         lowered = tag.lower()
         if lowered in {"script", "style", "iframe", "object", "embed"}:
             self.errors.append(f"content must not contain <{lowered}>")
@@ -84,6 +82,20 @@ def _transport_warnings() -> list[str]:
             "intercepted. Enable HTTPS when possible."
         ]
     return []
+
+
+def _normalize_article_url(value: Any) -> Any:
+    if not isinstance(value, str) or not value:
+        return value
+    parsed = urlsplit(value)
+    hostname = (parsed.hostname or "").lower()
+    if parsed.scheme == "http" and (
+        hostname == IMAGE_HOST or hostname.endswith(f".{IMAGE_HOST}")
+    ):
+        return urlunsplit(
+            ("https", parsed.netloc, parsed.path, parsed.query, parsed.fragment)
+        )
+    return value
 
 
 def _decode_json(raw: bytes, context: str) -> Any:
@@ -124,16 +136,12 @@ def _request_json(
         headers["Authorization"] = f"Bearer {api_key}"
     if content_type:
         headers["Content-Type"] = content_type
-    request = Request(
-        f"{_base_url()}{path}", data=body, headers=headers, method=method
-    )
+    request = Request(f"{_base_url()}{path}", data=body, headers=headers, method=method)
     try:
         with urlopen(request, timeout=timeout) as response:
             return response.status, _decode_json(response.read(), "console API")
     except HTTPError as exc:
-        raise ConsoleApiError(
-            _error_message(exc), http_status=exc.code
-        ) from exc
+        raise ConsoleApiError(_error_message(exc), http_status=exc.code) from exc
     except URLError as exc:
         reason = getattr(exc, "reason", exc)
         raise ConsoleApiError(f"cannot reach console API: {reason}") from exc
@@ -169,10 +177,7 @@ def _multipart_body(paths: list[Path], mode: str) -> tuple[bytes, str]:
         filename = path.name.replace('"', "_").replace("\r", "_").replace("\n", "_")
         media_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         add(f"--{boundary}\r\n")
-        add(
-            'Content-Disposition: form-data; name="images"; '
-            f'filename="{filename}"\r\n'
-        )
+        add(f'Content-Disposition: form-data; name="images"; filename="{filename}"\r\n')
         add(f"Content-Type: {media_type}\r\n\r\n")
         chunks.append(path.read_bytes())
         add("\r\n")
@@ -202,6 +207,11 @@ def _upload_images(paths: list[Path], mode: str) -> dict[str, Any]:
             ):
                 raise ConsoleApiError("image API returned an invalid item")
             normalized = dict(response["items"][0])
+            original_article_url = normalized.get("article_url")
+            normalized_article_url = _normalize_article_url(original_article_url)
+            normalized["article_url"] = normalized_article_url
+            if normalized.get("url") == original_article_url:
+                normalized["url"] = normalized_article_url
             normalized["source_path"] = str(path)
             items.append(normalized)
         except ConsoleApiError as exc:
@@ -231,8 +241,14 @@ def _upload_images(paths: list[Path], mode: str) -> dict[str, Any]:
         "mode": mode,
         "items": items,
         "count": len(items),
-        "success_count": sum(item.get("status") != "failed" for item in items),
-        "error_count": sum(item.get("status") == "failed" for item in items),
+        "success_count": sum(
+            item.get("status") == "complete" and not item.get("errors")
+            for item in items
+        ),
+        "error_count": sum(
+            item.get("status") != "complete" or bool(item.get("errors"))
+            for item in items
+        ),
     }
 
 
@@ -249,9 +265,7 @@ def _string_field(
     if required and not value:
         raise ConsoleApiError(f"draft field {name} is required")
     if max_length is not None and len(value) > max_length:
-        raise ConsoleApiError(
-            f"draft field {name} exceeds {max_length} characters"
-        )
+        raise ConsoleApiError(f"draft field {name} exceeds {max_length} characters")
     return value
 
 
@@ -285,7 +299,9 @@ def _validate_content(content: str) -> dict[str, int]:
         parsed = urlsplit(source)
         hostname = (parsed.hostname or "").lower()
         if parsed.scheme != "https" or not parsed.netloc:
-            raise ConsoleApiError(f"draft contains a non-HTTPS image URL: {source[:120]}")
+            raise ConsoleApiError(
+                f"draft contains a non-HTTPS image URL: {source[:120]}"
+            )
         if not (hostname == IMAGE_HOST or hostname.endswith(f".{IMAGE_HOST}")):
             raise ConsoleApiError(
                 "draft images must use article_url values returned by the image API: "
@@ -310,7 +326,9 @@ def _load_draft(path_value: str) -> tuple[dict[str, Any], dict[str, int]]:
         raise ConsoleApiError("article JSON must contain one object")
     unknown = sorted(set(payload) - ALLOWED_DRAFT_FIELDS)
     if unknown:
-        raise ConsoleApiError(f"article JSON contains unknown fields: {', '.join(unknown)}")
+        raise ConsoleApiError(
+            f"article JSON contains unknown fields: {', '.join(unknown)}"
+        )
 
     request_id = _string_field(payload, "request_id", required=True)
     if not REQUEST_ID_PATTERN.fullmatch(request_id):
@@ -321,9 +339,7 @@ def _load_draft(path_value: str) -> tuple[dict[str, Any], dict[str, int]]:
     author = _string_field(payload, "author", max_length=16)
     digest = _string_field(payload, "digest", max_length=120)
     content = _string_field(payload, "content", required=True)
-    content_source_url = _string_field(
-        payload, "content_source_url", max_length=1024
-    )
+    content_source_url = _string_field(payload, "content_source_url", max_length=1024)
     thumb_media_id = _string_field(
         payload, "thumb_media_id", required=True, max_length=256
     )
@@ -376,16 +392,19 @@ def _build_parser() -> argparse.ArgumentParser:
 def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     if args.command == "status":
         _, server = _request_json("GET", "/healthz", timeout=15)
+        transport_scheme = urlsplit(_base_url()).scheme
         return {
             "operation": "status",
-            "console_url": _base_url(),
+            "console_configured": True,
+            "transport_scheme": transport_scheme,
+            "transport_encrypted": transport_scheme == "https",
             "image_api_key_configured": bool(
                 os.environ.get("WECHAT_IMAGE_API_KEY", "").strip()
             ),
             "publish_api_key_configured": bool(
                 os.environ.get("WECHAT_PUBLISH_API_KEY", "").strip()
             ),
-            "server": server,
+            "server_healthy": isinstance(server, dict) and server.get("status") == "ok",
             "warnings": _transport_warnings(),
         }, 0
     if args.command == "upload-images":

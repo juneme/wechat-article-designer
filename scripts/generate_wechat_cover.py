@@ -18,9 +18,11 @@ def parse_hex(value: str) -> tuple[int, int, int]:
     if len(raw) != 6:
         raise argparse.ArgumentTypeError(f"Invalid color '{value}'; use #RRGGBB.")
     try:
-        return tuple(int(raw[index:index + 2], 16) for index in (0, 2, 4))
+        return tuple(int(raw[index : index + 2], 16) for index in (0, 2, 4))
     except ValueError as exc:
-        raise argparse.ArgumentTypeError(f"Invalid color '{value}'; use #RRGGBB.") from exc
+        raise argparse.ArgumentTypeError(
+            f"Invalid color '{value}'; use #RRGGBB."
+        ) from exc
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--brand", default="品牌招聘")
     parser.add_argument("--eyebrow", default="RECRUITMENT")
     parser.add_argument("--headline", default="期待新的同行者")
-    parser.add_argument("--tagline", default="多元岗位开放 · 期待与你并肩")
+    parser.add_argument("--tagline", default="多元岗位开放 · 招聘通道开启")
     parser.add_argument("--position-count", default="05")
     parser.add_argument("--positions-label", default="OPEN POSITIONS")
     parser.add_argument("--footer", default="")
@@ -51,7 +53,9 @@ def parse_args() -> argparse.Namespace:
     if args.width <= 0 or args.height <= 0:
         parser.error("--width and --height must be positive integers.")
     if args.width * 20 != args.height * 47:
-        parser.error("Canvas must be exactly 2.35:1 (width:height = 47:20), e.g. 1175x500.")
+        parser.error(
+            "Canvas must be exactly 2.35:1 (width:height = 47:20), e.g. 1175x500."
+        )
     if args.out.suffix.lower() != ".png":
         parser.error("--out must use a .png extension.")
     return args
@@ -89,7 +93,9 @@ def resolve_font(explicit: Path | None, bold: bool) -> Path:
     )
 
 
-def text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont) -> int:
+def text_width(
+    draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont
+) -> int:
     left, _, right, _ = draw.textbbox((0, 0), text or " ", font=font)
     return right - left
 
@@ -137,7 +143,7 @@ def fit_text(
         if len(lines) <= max_lines and total_height <= max_height:
             return font, lines, line_height
     raise ValueError(
-        f"Text does not fit without truncation: {text!r}. Shorten it or use a larger canvas."
+        f"Text does not fit without truncation: {text!r}. Shorten the text or use a larger canvas."
     )
 
 
@@ -177,8 +183,12 @@ def main() -> None:
     left_right = s(770)
     left_box = (margin, margin, left_right, height - margin)
     right_box = (left_right + gap, margin, width - margin, height - margin)
-    draw.rounded_rectangle(left_box, radius=s(30), fill=args.primary_soft, outline=args.border, width=s(1))
-    draw.rounded_rectangle(right_box, radius=s(30), fill=args.surface, outline=args.border, width=s(1))
+    draw.rounded_rectangle(
+        left_box, radius=s(30), fill=args.primary_soft, outline=args.border, width=s(1)
+    )
+    draw.rounded_rectangle(
+        right_box, radius=s(30), fill=args.surface, outline=args.border, width=s(1)
+    )
 
     content_x = s(56)
     badge_y = s(48)

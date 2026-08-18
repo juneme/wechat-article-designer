@@ -8,7 +8,7 @@ Start from `assets/warm-bookish-anniversary-article.html`. Replace every `{{PLAC
 
 - Use a warm paper-white reading surface, one brick or muted-red primary, one bronze or olive-brown secondary, and dark brown body text.
 - Keep the layout flat and editorial: thin rules, compact numbered chapter markers, small bilingual labels when useful, and square or lightly rounded image frames.
-- Avoid seals, faux certificates, imitation newspaper mastheads, gold gradients, calligraphy effects, and ornamental nostalgia unless the supplied brand system explicitly requires them.
+- Avoid seals, faux certificates, imitation newspaper mastheads, gold gradients, calligraphy effects, and ornamental nostalgia unless explicitly required by the supplied brand system.
 - Keep all top-level blocks on the same horizontal baseline and let vertical spacing create rhythm.
 
 Suggested fallback palette when no authoritative visual exists:
@@ -41,7 +41,7 @@ Suggested fallback palette when no authoritative visual exists:
 ## Template Editing Rules
 
 - Keep the opening, three numbered chapters, one takeaway strip, and compact closing as the default narrative spine.
-- Duplicate a chapter or photo frame only when the supplied copy requires it; renumber all duplicated labels consistently.
+- Duplicate a chapter or photo frame only when required by the supplied copy; renumber all duplicated labels consistently.
 - Replace every `{{PLACEHOLDER}}` before delivery. Do not leave generic template copy in the published fragment.
 - Keep the source as a bare WeChat fragment. Create a separate UTF-8 preview host only for browser review.
 - Do not reintroduce the original 42-item horizontal gallery. Use a finished collage bitmap or verified single-column repeated cards for large groups.

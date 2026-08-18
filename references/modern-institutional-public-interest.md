@@ -38,7 +38,7 @@ Recommended visual characteristics:
 
 ## Palette from the main visual
 
-When a main visual, campaign poster, or event key art exists, use it as the palette authority.
+When a main visual, campaign poster, or event key art exists, use the supplied visual as the palette authority.
 
 - Sample the actual large fields, headline/rule color, readable dark, and small accent before assigning tokens.
 - Keep 60-75% of the mobile article light, reserve 15-25% for sampled primary/accent surfaces, and keep very dark color near 5-10% unless the source visual is intentionally dark.
@@ -51,7 +51,7 @@ When a main visual, campaign poster, or event key art exists, use it as the pale
 Use whitespace to separate chapters instead of stacking more containers:
 
 - `44-60px` before a new chapter header;
-- `20-28px` from a short copy block to its related photo;
+- `20-28px` from a short copy block to the related photo;
 - `28-36px` between consecutive photo groups;
 - one core sentence and normally no more than two short paragraphs before the next visual break;
 - one leading image per chapter, with a node divider or short header after every 2-3 consecutive images.
@@ -69,15 +69,15 @@ These signals can be valid independently, but combining several often creates an
 - formal Chinese numerals such as “壹 / 贰 / 叁”;
 - imitation newspaper or commemorative-book layouts.
 
-Use them only when the brief explicitly calls for historical, ceremonial, archival, or traditional-cultural expression.
+Use these treatments only when the brief explicitly calls for historical, ceremonial, archival, or traditional-cultural expression.
 
 ## Copy architecture for public-interest articles
 
 A reliable public-facing sequence is:
 
 1. **Authority / responsibility**: who is doing the work and under what verified basis.
-2. **Why it matters**: no more than three public benefits.
-3. **Organization action**: where the service appears, how it is managed, how it continues.
+2. **Public value**: no more than three public benefits.
+3. **Organization action**: service location, management, and continuity.
 4. **Public action**: three short steps that a broad audience can perform.
 5. **Long-term close**: government guidance, organizational execution, and public participation.
 

@@ -4,7 +4,7 @@ Use this route for a calm cinematic article built from full-width color fields, 
 
 ## Evidence boundary
 
-The operator approved `Still Frame Cinema / 08` for inclusion in the style library on 2026-08-15. The fragment passed Creative audit and 320px, 375px, and 390px source/fallback browser checks, with rich-copy success and zero console errors. The operator did not explicitly confirm a real WeChat draft-box or published-phone regression, so keep its publishing status as real-editor pending.
+`Still Frame Cinema / 08` passed Creative audit and 320px, 375px, and 390px source/fallback browser checks, with rich-copy success and zero console errors. Real WeChat draft-box and published-phone regression evidence is unavailable, so keep the publishing status as `real-editor pending`.
 
 ## Design fingerprint
 

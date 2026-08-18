@@ -1,16 +1,16 @@
 # Paper-Cut Original Series
 
-Use these five routes as independent Paper Cut Artbook DNAs. They share artbook principles, not a common page skeleton.
+Use the five routes as independent Paper Cut Artbook DNAs with shared artbook principles but no common page skeleton.
 
 ## Evidence boundary
 
-The operator approved all five routes for skill inclusion on 2026-08-16 after reviewing their full-page comparison. Each fragment passed Creative static audit, rich-copy, console, and 320px, 375px, and 390px source/fallback browser checks.
+All five routes passed full-page comparison, Creative static audit, rich-copy, console, and 320px, 375px, and 390px source/fallback browser checks.
 
-The operator did not explicitly confirm that these five exact fragments were pasted into the real WeChat draft box and checked on published-phone previews. Keep their publishing status as `real-editor pending`; do not generalize their browser evidence into universal support for `clip-path`, `writing-mode`, `box-decoration-break`, or compact flex.
+Real-editor paste and published-phone preview evidence is unavailable for these exact fragments. Keep the publishing status as `real-editor pending`; do not generalize browser evidence into universal support for `clip-path`, `writing-mode`, `box-decoration-break`, or compact flex.
 
 ## Shared originality contract
 
-- Preserve the chosen route's semantic paper object, not its exact copy or full DOM order.
+- Preserve the chosen route's semantic paper object rather than exact copy or full DOM order.
 - Change at least four gestalt axes when deriving a sibling: first-screen mass, dominant alignment, container archetype, image-ratio rhythm, vertical density curve, and closing mass.
 - Compare full-page thumbnails across every sibling. Rebuild any result that reads as the same page with different colors, labels, or corner shapes.
 - Keep image silhouettes role-specific and replaceable in the editor. Make all advanced geometry nonessential after fallback removal.

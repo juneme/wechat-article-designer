@@ -4,9 +4,9 @@ Use this route for an artbook-family composition built from topographic notation
 
 ## Evidence boundary
 
-The operator confirmed the exact `Contour Index / 07` fragment as usable in the WeChat publishing path on 2026-08-15. It passed Creative audit and 320px, 375px, and 390px source/fallback browser checks before confirmation. Editor version, device, pasted DOM, and property-by-property preservation are unknown.
+**Compatibility status**: passed WeChat-path compatibility, Creative audit, and 320px, 375px, and 390px source/fallback browser checks. Editor version, device, pasted DOM, and property-by-property preservation are unknown.
 
-The same review found its whole-page silhouette too close to Paper Cut Artbook. Store the fragment as compatible design DNA and an artbook subfamily, not as evidence that local component changes automatically create a distinct gestalt.
+**Originality status**: whole-page silhouette remains too close to Paper Cut Artbook. Store the fragment as compatible design DNA and an artbook subfamily, not as evidence that local component changes automatically create a distinct gestalt.
 
 ## Design fingerprint
 
@@ -22,7 +22,7 @@ The same review found its whole-page silhouette too close to Paper Cut Artbook. 
 
 1. Use stepped margins for no more than three short levels; keep the narrowest row readable at 320px.
 2. Keep repeating radial fields decorative or paired with independently readable text and a solid background fallback.
-3. Use organic and circular image silhouettes only when their narrative roles differ.
+3. Use organic and circular image silhouettes only for distinct narrative roles.
 4. Keep the sample drawer as a manual `overflow-x:auto` strip with stable order and a static swipe cue.
 5. Preserve ordinary source order so the conservative fallback can expand to a single column.
 

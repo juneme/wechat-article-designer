@@ -7,14 +7,14 @@ Use this reference only when article assets or a finished article must pass thro
 Read configuration from the process environment:
 
 ```text
-WECHAT_CONSOLE_URL=http://server-ip:8787
-WECHAT_IMAGE_API_KEY=the image API bearer key
-WECHAT_PUBLISH_API_KEY=the independent draft API bearer key
+WECHAT_CONSOLE_URL=https://console.example.test:8791
+WECHAT_IMAGE_API_KEY=image-api-bearer-key
+WECHAT_PUBLISH_API_KEY=draft-api-bearer-key
 ```
 
-`WECHAT_IMAGE_API_KEY` must contain the same secret as the console server's `AI_API_KEY`. `WECHAT_PUBLISH_API_KEY` must contain the same secret as the server's `PUBLISH_API_KEY`. The different client-side names make each key's purpose explicit; they do not create new server credentials.
+`WECHAT_IMAGE_API_KEY` must contain the same secret as the console server's `AI_API_KEY`. `WECHAT_PUBLISH_API_KEY` must contain the same secret as the server's `PUBLISH_API_KEY`. Distinct client-side names clarify key purpose without creating new server credentials.
 
-Never store these values in the Skill, article JSON, generated HTML, shell history examples, screenshots, or chat output. The client accepts both HTTP and HTTPS remote console URLs. HTTP is intended for deployments that do not have a domain yet and works directly without an SSH tunnel, but it sends bearer keys and article data without transport encryption. Keep the structured warning in command output and enable HTTPS when the deployment is ready.
+Never store these values in the Skill, article JSON, generated HTML, shell history examples, screenshots, or published output. The client accepts both HTTP and HTTPS remote console URLs. HTTP supports deployments without a domain or SSH tunnel but sends bearer keys and article data without transport encryption. Keep the structured warning in command output and enable HTTPS whenever available.
 
 Check connectivity without exposing key values:
 
@@ -26,7 +26,7 @@ The command reports whether each local key is configured, but never prints the k
 
 ## 1. Upload Body Images
 
-Inspect and finalize images before upload. One command accepts at most 20 files and sends them one at a time to keep memory use bounded.
+Inspect and finalize images before upload. One command accepts at most 20 files and sends each file separately to keep memory use bounded.
 
 ```powershell
 python scripts/wechat_console_api.py upload-images --mode article '.\images\lead.jpg' '.\images\detail.png'
@@ -34,7 +34,7 @@ python scripts/wechat_console_api.py upload-images --mode article '.\images\lead
 
 Read each result by `source_path`, not by guessing from upload order. A successful item has `status: "complete"` and an `article_url`. Stop if the command returns a nonzero exit code, `error_count` is nonzero, or an intended item lacks `article_url`.
 
-Insert the exact returned URL into the final article:
+The client upgrades an `http://mmbiz.qpic.cn/...` article URL returned by WeChat to the same HTTPS host, path, and query before reporting success. Insert the normalized `article_url` into the final article:
 
 ```html
 <img src="https://mmbiz.qpic.cn/..." alt="" style="display:block;width:100%;height:auto;" />
@@ -44,13 +44,13 @@ Do not use `material_url`, a local path, a temporary URL, or a non-WeChat host f
 
 ## 2. Upload the Cover
 
-Generate or finalize the 2.35:1 cover first, then upload it as permanent material:
+Generate or finalize the 2.35:1 cover first, then upload the cover as permanent material:
 
 ```powershell
 python scripts/wechat_console_api.py upload-cover '.\cover.png'
 ```
 
-The command returns `media_id`. Use that value as `thumb_media_id`; a cover URL cannot replace it.
+The command returns `media_id`. Use the returned value as `thumb_media_id`; a cover URL is not a valid replacement.
 
 ## 3. Build and Validate Article JSON
 
@@ -58,7 +58,7 @@ Write UTF-8 JSON using this exact contract:
 
 ```json
 {
-  "request_id": "article-20260817-001",
+  "request_id": "article-example-001",
   "title": "文章标题",
   "author": "作者",
   "digest": "文章摘要",
@@ -70,7 +70,7 @@ Write UTF-8 JSON using this exact contract:
 }
 ```
 
-`request_id` is the idempotency key. Reuse it only for byte-equivalent article data. If article data changes after an earlier submission, generate a new request ID.
+`request_id` is the idempotency key. Reuse the key only for byte-equivalent article data. Generate a new request ID after any article-data change following an earlier submission.
 
 Validate locally without contacting the draft endpoint:
 
@@ -82,7 +82,7 @@ Validation enforces the server contract: title up to 32 characters, author up to
 
 ## 4. Create the Draft
 
-This is the only mutating command in the direct-publishing workflow. When the user requests full direct publishing or delivery to the WeChat draft box, run it automatically after `validate-draft` succeeds; do not ask for a second confirmation:
+`create-draft` is the only mutating command in the direct-publishing workflow. For full direct publishing or delivery to the WeChat draft box, run the command automatically after `validate-draft` succeeds without a second confirmation:
 
 ```powershell
 python scripts/wechat_console_api.py create-draft --article '.\article.json'
@@ -90,7 +90,7 @@ python scripts/wechat_console_api.py create-draft --article '.\article.json'
 
 Success returns a draft `media_id`, the `request_id`, a `cached` flag, and server validation counts. A cached response is a successful idempotent replay, not a second draft. Creating a draft does not publish or mass-send the article; final publication remains a separate manual or scan-confirmed action in the WeChat backend.
 
-Do not run `create-draft` for preview-only, HTML-only, image-upload-only, or preparation-only requests. If the user chose the full direct-publishing workflow, proceed automatically unless they explicitly ask to stop before draft creation.
+Do not run `create-draft` for preview-only, HTML-only, image-upload-only, or preparation-only requests. For the full direct-publishing workflow, proceed automatically unless a stop before draft creation is explicitly requested.
 
 ## Failure Handling
 
@@ -100,4 +100,4 @@ Do not run `create-draft` for preview-only, HTML-only, image-upload-only, or pre
 
 Check the HTTP status and error message. `401` normally means the corresponding bearer key is missing or wrong, `409` means a request ID was reused for different article data, `422` means the submitted contract is invalid, and `502` or `503` means the server cannot currently complete the WeChat operation.
 
-Never automatically retry `create-draft` after a timeout, `502`, `pending`, or `unknown` result. First inspect the console record and the real WeChat draft box because WeChat may have created the draft before its response was lost. A confirmed `created` response is idempotently cached; an `unknown` result deliberately blocks reuse of the same `request_id`.
+Never automatically retry `create-draft` after a timeout, `502`, `pending`, or `unknown` result. First inspect the console operation state and the real WeChat draft box because draft creation may have completed before the response was lost. A confirmed `created` response is idempotently cached; an `unknown` result deliberately blocks reuse of the same `request_id`.

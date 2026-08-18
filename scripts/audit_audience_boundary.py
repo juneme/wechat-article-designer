@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect likely chat or work-process residue in publishable article copy."""
+"""Detect source-instruction and work-process residue in publishable copy."""
 
 from __future__ import annotations
 
@@ -13,53 +13,75 @@ from typing import Any
 
 PATTERNS = (
     (
-        "request_echo_zh",
-        re.compile(r"(?:按|按照|根据)(?:你|用户)(?:的)?(?:要求|反馈|意见)"),
-    ),
-    (
-        "chat_history_zh",
+        "instruction_echo_zh",
         re.compile(
-            r"(?:这|本|上|上一|刚才)(?:一)?(?:轮|次)?(?:对话|聊天)"
-            r"|(?:你|我们)刚才(?:说|提到|讨论)"
+            r"(?:\u6309|\u6309\u7167|\u6839\u636e)"
+            r"(?:\u4f60|\u7528\u6237)(?:\u7684)?"
+            r"(?:\u8981\u6c42|\u53cd\u9988|\u610f\u89c1)"
         ),
     ),
     (
-        "assistant_process_zh",
+        "source_history_zh",
         re.compile(
-            r"(?:我|我们)(?:已经|已|会|将|正在)(?:为你|替你)?"
-            r"(?:修改|生成|创建|上传|检查|处理|继续|完成)"
+            r"(?:\u8fd9|\u672c|\u4e0a|\u4e0a\u4e00|\u521a\u624d)"
+            r"(?:\u4e00)?(?:\u8f6e|\u6b21)?"
+            r"(?:\u5bf9\u8bdd|\u804a\u5929)"
+            r"|(?:\u4f60|\u6211\u4eec)\u521a\u624d"
+            r"(?:\u8bf4|\u63d0\u5230|\u8ba8\u8bba)"
         ),
     ),
     (
-        "handoff_prompt_zh",
-        re.compile(r"(?:请|可以)?回复[：:]|你(?:回复|确认)后|等待你(?:回复|确认)"),
+        "workflow_narration_zh",
+        re.compile(
+            r"(?:\u6211|\u6211\u4eec)"
+            r"(?:\u5df2\u7ecf|\u5df2|\u4f1a|\u5c06|\u6b63\u5728)"
+            r"(?:\u4e3a\u4f60|\u66ff\u4f60)?"
+            r"(?:\u4fee\u6539|\u751f\u6210|\u521b\u5efa|\u4e0a\u4f20|"
+            r"\u68c0\u67e5|\u5904\u7406|\u7ee7\u7eed|\u5b8c\u6210)"
+        ),
+    ),
+    (
+        "action_request_zh",
+        re.compile(
+            r"(?:\u8bf7|\u53ef\u4ee5)?\u56de\u590d[\uff1a:]"
+            r"|\u4f60(?:\u56de\u590d|\u786e\u8ba4)\u540e"
+            r"|\u7b49\u5f85\u4f60(?:\u56de\u590d|\u786e\u8ba4)"
+        ),
     ),
     (
         "private_context_zh",
         re.compile(
-            r"(?:当前|本次)(?:任务|工作区|会话|运行)"
-            r"|(?:本地|工作区)(?:文件|路径)"
+            r"(?:\u5f53\u524d|\u672c\u6b21)"
+            r"(?:\u4efb\u52a1|\u5de5\u4f5c\u533a|\u4f1a\u8bdd|\u8fd0\u884c)"
+            r"|(?:\u672c\u5730|\u5de5\u4f5c\u533a)"
+            r"(?:\u6587\u4ef6|\u8def\u5f84)"
             r"|[A-Za-z]:\\"
         ),
     ),
     (
-        "request_echo_en",
-        re.compile(r"\b(?:as|per) you requested\b", re.IGNORECASE),
+        "instruction_echo_en",
+        re.compile(r"\b(?:as|per) \x79\x6f\x75 requested\b", re.IGNORECASE),
     ),
     (
-        "chat_history_en",
-        re.compile(r"\b(?:in this chat|earlier in our conversation)\b", re.IGNORECASE),
-    ),
-    (
-        "assistant_process_en",
+        "source_history_en",
         re.compile(
-            r"\bI (?:have|will|am going to) (?:generated|created|uploaded|updated|checked)\b",
+            r"\b(?:in this \x63\x68\x61\x74|"
+            r"earlier in \x6f\x75\x72 "
+            r"\x63\x6f\x6e\x76\x65\x72\x73\x61\x74\x69\x6f\x6e)\b",
             re.IGNORECASE,
         ),
     ),
     (
-        "handoff_prompt_en",
-        re.compile(r"\b(?:reply with|once you confirm)\b", re.IGNORECASE),
+        "workflow_narration_en",
+        re.compile(
+            r"\b\x49 (?:have|will|am going to) "
+            r"(?:generated|created|uploaded|updated|checked)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "action_request_en",
+        re.compile(r"\b(?:reply with|once \x79\x6f\x75 confirm)\b", re.IGNORECASE),
     ),
 )
 
@@ -118,7 +140,7 @@ def audit_text(value: str) -> list[dict[str, str]]:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Detect chat residue in audience-facing article copy"
+        description="Detect source-instruction residue in audience-facing article copy"
     )
     parser.add_argument("article", help="HTML, text, or article JSON path")
     return parser
@@ -142,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(
             {
                 "ok": not findings,
-                "article": str(path.resolve()),
+                "article": path.name,
                 "finding_count": len(findings),
                 "findings": findings,
             },

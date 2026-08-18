@@ -1,6 +1,6 @@
 # Original Style Synthesis
 
-Use this reference for every new full-article creation unless the user explicitly requests faithful reuse of one named template.
+Use this reference for every new full-article creation unless faithful reuse of a named template is explicitly requested.
 
 ## Read the article before choosing a look
 
@@ -15,7 +15,7 @@ Extract these signals from the brief, copy, images, and audience:
 - desired reader action;
 - dominant objects, metaphors, places, dates, or processes in the story.
 
-Do not ask the user to pick a visual template when these inputs are sufficient. Infer a direction and proceed.
+Do not request a visual-template selection when these inputs are sufficient. Infer a direction and proceed.
 
 ## Build a design fingerprint
 
@@ -58,8 +58,8 @@ If the result still resembles one template at a glance, revise the design finger
 
 ## Explicit-template exception
 
-When the user explicitly asks to reproduce or closely follow one named template, honor that request and treat the asset as a structural starter. Still adapt copy density, image roles, palette, accessibility, and compliance to the article. Do not show the full library unless the user asks to browse it.
+When reproduction or close adherence to a named template is explicitly requested, treat the asset as a structural starter. Still adapt copy density, image roles, palette, accessibility, and compliance to the article. Do not show the full library unless style browsing is explicitly requested.
 
 ## Handoff
 
-State the new style name in one short line and summarize its design thesis. Do not narrate the internal template-mixing process unless the user asks.
+State the new style name in one short line and summarize the design thesis. Keep the internal template-mixing process outside the handoff.

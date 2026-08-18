@@ -4,7 +4,7 @@ Use this pattern when a WeChat recruitment article needs to feel direct, youthfu
 
 ## Selection boundary
 
-Use this register for a clear hiring call, a small number of roles, a younger or broad adult audience, and factual application details that benefit from strong hierarchy. Do not make it the new default for every recruitment post. Rotate visual registers between campaigns, and avoid it for legal notices, formal institutional announcements, or topics that require a restrained public-service tone.
+Use this register for a clear hiring call, a small number of roles, a younger or broad adult audience, and factual application details that benefit from strong hierarchy. Do not make this register the default for every recruitment post. Rotate visual registers between campaigns, and avoid the dopamine route for legal notices, formal institutional announcements, or topics requiring a restrained public-service tone.
 
 ## Visual contract
 
@@ -37,12 +37,12 @@ Keep radius tight: `4-8px` for hero, job cards, fact bands, and footer groups. U
 Treat cover art and article art as different compositions:
 
 - A 2.35:1 cover may reserve negative space for a deterministic title overlay.
-- A body image has no title overlay and must look balanced edge to edge. Fill intentional cover whitespace with real scene content when adapting it for the article.
-- Generated body art supports the theme; it does not prove employment conditions, official affiliation, or workplace reality.
+- A body image has no title overlay and must look balanced edge to edge. Fill intentional cover whitespace with real scene content during article adaptation.
+- Generated body art supports the theme without proving employment conditions, official affiliation, or workplace reality.
 
 ## Editable-paragraph image frame
 
-Keep the persistent inner image container unpadded and give it one direct-child paragraph anchor:
+Keep the persistent inner image container unpadded and add one direct-child paragraph anchor:
 
 ```html
 <section style="box-sizing:border-box;margin:20px 8px 0;padding:8px;background:#FF6B5E;border:2px solid #151836;border-radius:8px;overflow:hidden;">
@@ -52,17 +52,17 @@ Keep the persistent inner image container unpadded and give it one direct-child 
 </section>
 ```
 
-Tell the publisher to click the blank inner area and insert the image directly without selecting or deleting anything first. The 1px paragraph provides a real caret target while the containing section keeps the frame height and survives insertion. Do not move `min-height`, border, padding, or background onto that paragraph. Put filenames and placement instructions in the delivery guide or HTML comments. Do not put decorative badges such as `TEAM & STORE` inside the photo frame unless the brief explicitly asks for one.
+In delivery instructions, require direct insertion through the blank inner area without selecting or deleting content first. The 1px paragraph provides a real caret target while the containing section keeps the frame height and survives insertion. Do not move `min-height`, border, padding, or background onto that paragraph. Put filenames and placement instructions in the delivery guide or HTML comments. Do not put decorative badges such as `TEAM & STORE` inside the photo frame unless explicitly required by the brief.
 
 ## High-priority recruitment facts
 
-Put hiring scope, location coverage, graduate cohorts, urgent deadlines, or other decision-critical facts immediately below salary as full-width contrast bands. Do not bury them in the small preference note.
+Put hiring scope, location coverage, graduate cohorts, urgent deadlines, or other decision-critical facts immediately below salary as full-width contrast bands. Do not bury decision-critical facts in the small preference note.
 
 ```html
 <p style="box-sizing:border-box;margin:16px 0 0;padding:12px 13px;background:#3155F5;border:2px solid #151836;border-radius:4px;font-size:12px;line-height:1.5;font-weight:900;color:#FFD84D;">{{FACT_LABEL}}<br><span style="font-size:18px;line-height:1.7;color:#FFFFFF;font-weight:900;">{{FACT_VALUE}}</span></p>
 ```
 
-Keep legal qualifiers in the same band when they materially change the claim, for example `同等条件下优先`. Keep other preference groups in the smaller note below requirements to avoid duplication.
+Keep legal qualifiers in the same band when a qualifier materially changes the claim, for example `同等条件下优先`. Keep other preference groups in the smaller note below requirements to avoid duplication.
 
 ## Application and title rules
 
@@ -81,7 +81,7 @@ Run the standard `SKILL.md` article audit, then check 375px and 390px previews. 
 
 - priority bands fit without clipping;
 - salary stays on one line;
-- inserted body art stays inside the frame after direct paste, with no full-height blank block above or below it;
+- inserted body art stays inside the frame after direct paste, with no full-height blank block above or below the image;
 - the QR placeholder stays narrow;
 - contact and address copy wrap without horizontal overflow;
 - the final WeChat fragment has zero local image paths and balanced `section`, `p`, and `span` tags.

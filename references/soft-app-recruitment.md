@@ -1,8 +1,8 @@
 # Soft App Recruitment Article Pattern
 
-Use this pattern when a WeChat recruitment article should feel light, contemporary, and approachable rather than corporate, ceremonial, or poster-like. It is designed for job lists, salary ranges, benefits, team photos, and an application CTA.
+Use this pattern when a WeChat recruitment article should feel light, contemporary, and approachable rather than corporate, ceremonial, or poster-like. The pattern supports job lists, salary ranges, benefits, team photos, and an application CTA.
 
-Start from `assets/soft-app-recruitment-article.html`. Replace every `{{PLACEHOLDER}}`, duplicate the job card as needed, and keep all styles inline. Treat it as a candidate source rather than a drop-in guarantee: compact flex rows require a fresh WeChat editor regression with the final copy.
+Start from `assets/soft-app-recruitment-article.html`. Replace every `{{PLACEHOLDER}}`, duplicate the job card as needed, and keep all styles inline. Treat the asset as a candidate source rather than a drop-in guarantee: compact flex rows require a fresh WeChat editor regression with the final copy.
 
 ## Visual contract
 
@@ -21,7 +21,7 @@ Build a pale mobile canvas with restrained App-like surfaces:
 | Rose | `#F9E9F0` | Care/wellness accent |
 | Border | `#DDE1EF` | Quiet 1px dividers and card outlines |
 
-Keep the canvas light. Do not use pure black as the page background. Use one primary color plus two or three pale companion tints; do not turn every surface into a variation of one hue. The Steady variant uses solid fills; the Creative variant may add a subtle gradient or shadow when it keeps the light App-like character and includes a solid fallback.
+Keep the canvas light. Do not use pure black as the page background. Use one primary color plus two or three pale companion tints; do not turn every surface into a variation of one hue. The Steady variant uses solid fills; the Creative variant may add a subtle gradient or shadow while preserving the light App-like character and a solid fallback.
 
 Use rounded corners with hierarchy:
 
@@ -46,7 +46,7 @@ Keep repeated roles single-column. A WeChat body is narrow, and salary, title, a
 
 ## Conditional compact flex structure
 
-For compact role headers, the candidate template uses `section` elements with inline flex styles. Do not use `table`, `thead`, `tbody`, `tr`, `th`, or `td` anywhere in this pattern. WeChat may apply its own cell borders, row sizing, and column widths after paste, producing visible spreadsheet grids that do not appear in a browser preview.
+For compact role headers, the candidate template uses `section` elements with inline flex styles. Do not use `table`, `thead`, `tbody`, `tr`, `th`, or `td` anywhere in this pattern. WeChat may apply editor-defined cell borders, row sizing, and column widths after paste, producing visible spreadsheet grids absent from a browser preview.
 
 Compact flex is a proven capability, but the exact final copy still needs mobile regression because long titles and fixed pills can squeeze each other. If the editor rewrites the row, stack the number, title, and salary as single-column `section + p + span` flow blocks; for dense repeated visuals, export one bitmap instead.
 
@@ -68,7 +68,7 @@ Use this role header structure:
 Compatibility details:
 
 - Put `min-width:0` on the flexible title column so long job names wrap instead of pushing the salary out.
-- Give salary pills an explicit matching `width` and `flex-basis` (`88px` is the verified default), then add both `white-space:nowrap` and `word-break:keep-all` to the pill and its text. Never insert a manual line break into a salary such as `2.5K-5K`.
+- Give salary pills an explicit matching `width` and `flex-basis` (`88px` is the verified default), then add both `white-space:nowrap` and `word-break:keep-all` to the pill and text. Never insert a manual line break into a salary such as `2.5K-5K`.
 - Use margins between flex children; do not depend on `gap`, which may be stripped or inconsistently preserved.
 - Avoid `position`, fixed heights for text areas, and multi-column job grids.
 - Keep body text at `14-16px`, line height at `1.75-1.95`, and metadata at `10-12px`.
@@ -85,7 +85,7 @@ Use an HTML placeholder when the editor will receive a real team, store, or work
 </section>
 ```
 
-Tell the publisher to paste the full article, click the blank inner area, and insert the photo directly without selecting or deleting the 1px paragraph anchor. Keep frame height and visual styles on the containing section. Keep placement instructions outside the final image slot. Do not embed a local file path. Keep a QR-code placeholder narrow and centered so it cannot expand into a full-width block.
+In delivery instructions, require a full-article paste followed by direct photo insertion through the blank inner area without selecting or deleting the 1px paragraph anchor. Keep frame height and visual styles on the containing section. Keep placement instructions outside the final image slot. Do not embed a local file path. Keep a QR-code placeholder narrow and centered to prevent full-width expansion.
 
 ## Cover generation
 
@@ -103,12 +103,12 @@ python scripts/generate_wechat_cover.py `
   --brand "{{BRAND_NAME}}" `
   --eyebrow "RECRUITMENT" `
   --headline "期待新的同行者" `
-  --tagline "多元岗位开放 · 期待与你并肩" `
+  --tagline "多元岗位开放 · 招聘通道开启" `
   --position-count "05" `
   --footer "{{CAMPAIGN_LABEL}}"
 ```
 
-The script draws the supplied strings directly with a CJK font. It does not translate, summarize, or invent copy. Pass `--font-regular` and `--font-bold` when automatic font discovery is unavailable. Keep the title short enough for two lines; the script reduces font size before failing and never truncates text.
+The script draws the supplied strings directly with a CJK font without translation, summarization, or invented copy. Pass `--font-regular` and `--font-bold` when automatic font discovery is unavailable. Keep the title short enough for two lines; the script reduces font size before failing and never truncates text.
 
 ## Validation
 
@@ -138,4 +138,4 @@ The pattern passes only when:
 - Every salary stays on one line, including decimal ranges; all repeated salary pills keep the same measured width.
 - Long job names wrap without overlapping the salary pill.
 - The WeChat editor shows no injected grid borders after a fresh paste.
-- Photo and QR placeholders retain their intended width after paste.
+- Photo and QR placeholders retain the intended width after paste.

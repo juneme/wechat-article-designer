@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Bake a soft rounded WeChat-style frame into an image.
 
-Use only when the image itself must carry the white frame, rounded corners, and
-shadow. For WeChat articles where the user will manually insert photos, prefer
-an HTML frame placeholder instead.
+Use only when the image file must carry the white frame, rounded corners, and
+shadow. For manual photo insertion in WeChat, prefer an HTML frame placeholder.
 """
 
 from __future__ import annotations
@@ -26,10 +25,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--frame-radius", type=int, default=42)
     parser.add_argument("--photo-radius", type=int, default=34)
     # Brand-customizable colors. Defaults match the skill's default fallbacks.
-    parser.add_argument("--canvas-bg", type=str, default="#f7faf8",
-                        help="Outer canvas background (page color around the frame).")
-    parser.add_argument("--frame-border", type=str, default="#daeae2",
-                        help="Border color of the white frame around the photo.")
+    parser.add_argument(
+        "--canvas-bg",
+        type=str,
+        default="#f7faf8",
+        help="Outer canvas background (page color around the frame).",
+    )
+    parser.add_argument(
+        "--frame-border",
+        type=str,
+        default="#daeae2",
+        help="Border color of the white frame around the photo.",
+    )
     return parser.parse_args()
 
 
@@ -49,7 +56,12 @@ def parse_hex_color(value: str) -> tuple[int, int, int, int]:
         r, g, b = int(raw[0:2], 16), int(raw[2:4], 16), int(raw[4:6], 16)
         return r, g, b, 255
     if len(raw) == 8:
-        r, g, b, a = int(raw[0:2], 16), int(raw[2:4], 16), int(raw[4:6], 16), int(raw[6:8], 16)
+        r, g, b, a = (
+            int(raw[0:2], 16),
+            int(raw[2:4], 16),
+            int(raw[4:6], 16),
+            int(raw[6:8], 16),
+        )
         return r, g, b, a
     raise ValueError(f"Invalid color '{value}'. Use '#rrggbb' or '#rrggbbaa'.")
 

@@ -59,7 +59,7 @@ def mock_console() -> Iterator[tuple[str, ThreadingHTTPServer]]:
                 for index, filename in enumerate(filenames, start=1):
                     item = {
                         "filename": filename,
-                        "url": f"https://mmbiz.qpic.cn/mock/{index}",
+                        "url": f"http://mmbiz.qpic.cn/mock/{index}",
                         "status": "complete",
                         "errors": [],
                         "media_id": None,
@@ -146,7 +146,11 @@ def test_status_and_multipart_image_upload(
 
     assert client.main(["status"]) == 0
     status = json.loads(capsys.readouterr().out)
-    assert status["server"] == {"status": "ok"}
+    assert status["console_configured"] is True
+    assert status["transport_scheme"] == "http"
+    assert status["transport_encrypted"] is False
+    assert status["server_healthy"] is True
+    assert "console_url" not in status
     assert status["image_api_key_configured"] is True
     assert status["publish_api_key_configured"] is True
     assert status["warnings"] == []
@@ -156,9 +160,7 @@ def test_status_and_multipart_image_upload(
     first.write_bytes(b"jpeg-body")
     second.write_bytes(b"png-body")
     assert (
-        client.main(
-            ["upload-images", "--mode", "article", str(first), str(second)]
-        )
+        client.main(["upload-images", "--mode", "article", str(first), str(second)])
         == 0
     )
     uploaded = json.loads(capsys.readouterr().out)
@@ -166,12 +168,12 @@ def test_status_and_multipart_image_upload(
         str(first.resolve()),
         str(second.resolve()),
     ]
-    assert uploaded["items"][0]["article_url"].startswith(
-        "https://mmbiz.qpic.cn/"
-    )
+    assert uploaded["items"][0]["article_url"].startswith("https://mmbiz.qpic.cn/")
     assert uploaded["warnings"] == []
 
-    uploads = [record for record in server.records if record[1] == "/api/v1/wechat-images"]
+    uploads = [
+        record for record in server.records if record[1] == "/api/v1/wechat-images"
+    ]
     assert len(uploads) == 2
     for _, _, headers, body in uploads:
         assert headers["Authorization"] == f"Bearer {IMAGE_KEY}"
@@ -183,14 +185,56 @@ def test_status_and_multipart_image_upload(
 
 
 def test_remote_http_is_allowed_with_a_security_warning(monkeypatch) -> None:
-    monkeypatch.setenv("WECHAT_CONSOLE_URL", "http://192.0.2.10:8787")
+    monkeypatch.setenv("WECHAT_CONSOLE_URL", "http://console.example.test:8791")
     client = _load_client()
 
-    assert client._base_url() == "http://192.0.2.10:8787"
+    assert client._base_url() == "http://console.example.test:8791"
     assert client._transport_warnings() == [
         "Remote HTTP is not encrypted; API keys and article data may be "
         "intercepted. Enable HTTPS when possible."
     ]
+
+
+def test_partial_upload_is_counted_as_an_error(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("WECHAT_IMAGE_API_KEY", IMAGE_KEY)
+    client = _load_client()
+    image = tmp_path / "partial.png"
+    image.write_bytes(b"partial-image")
+
+    monkeypatch.setattr(
+        client,
+        "_request_json",
+        lambda *_args, **_kwargs: (
+            200,
+            {
+                "items": [
+                    {
+                        "filename": image.name,
+                        "status": "partial",
+                        "errors": [],
+                        "article_url": "http://mmbiz.qpic.cn/mock/partial",
+                    }
+                ]
+            },
+        ),
+    )
+
+    result = client._upload_images([image], "article")
+
+    assert result["success_count"] == 0
+    assert result["error_count"] == 1
+    assert result["items"][0]["article_url"].startswith("https://mmbiz.qpic.cn/")
+
+
+def test_article_url_upgrade_is_limited_to_wechat_hosts() -> None:
+    client = _load_client()
+
+    assert (
+        client._normalize_article_url("http://mmbiz.qpic.cn/mock/1")
+        == "https://mmbiz.qpic.cn/mock/1"
+    )
+    suspicious = "http://mmbiz.qpic.cn.example.com/mock/1"
+    assert client._normalize_article_url(suspicious) == suspicious
 
 
 def test_cover_upload_validation_and_draft_payload(
@@ -210,18 +254,14 @@ def test_cover_upload_validation_and_draft_payload(
 
     article_path = tmp_path / "article.json"
     article = {
-        "request_id": "article-20260817-001",
+        "request_id": "article-example-001",
         "title": "测试文章",
         "author": "作者",
         "digest": "摘要",
-        "content": (
-            '<section><img src="https://mmbiz.qpic.cn/mock/1"></section>'
-        ),
+        "content": ('<section><img src="https://mmbiz.qpic.cn/mock/1"></section>'),
         "thumb_media_id": cover_result["media_id"],
     }
-    article_path.write_text(
-        json.dumps(article, ensure_ascii=False), encoding="utf-8"
-    )
+    article_path.write_text(json.dumps(article, ensure_ascii=False), encoding="utf-8")
     request_count = len(server.records)
     assert client.main(["validate-draft", "--article", str(article_path)]) == 0
     validated = json.loads(capsys.readouterr().out)

@@ -35,13 +35,13 @@ Treat this file as an internal design vocabulary for new full-article creation. 
 
 - Select capabilities by dimension, not by complete template. Build one new composition from the article's content, images, audience, and desired action.
 - Keep one dominant visual thesis. Combine at most two secondary gestures so the result remains coherent.
-- Derive one recurring motif from the article itself. A topic-native route, timestamp, shelf mark, ticket, waveform, field note, or other semantic device is more original than generic decoration.
+- Derive one recurring motif from article content. A topic-native route, timestamp, shelf mark, ticket, waveform, field note, or other semantic device is more original than generic decoration.
 - Do not copy one asset's full section order. Do not call a recolor or radius change an original design.
 - Use `references/creative-css-capabilities.md` to choose Steady or Creative delivery without deleting proven CSS.
 - Never import example names, dates, addresses, claims, prices, slogans, or image filenames.
 
 ## Explicit Template Requests
 
-If the user explicitly names a style number or asks to reproduce one design, load only the named route and use it as a structural starter. This is an exception to the default original-synthesis workflow.
+When a style number or faithful reproduction is explicitly requested, load only the named route and use the route as a structural starter. This is an exception to the default original-synthesis workflow.
 
-If the user explicitly asks to browse available styles, render `assets/previews/template-gallery.png`, present all 24 names, and wait for one selection. Do not show the gallery during normal new-article creation.
+When style browsing is explicitly requested, render `assets/previews/template-gallery.png`, present all 24 names, and wait for one selection. Do not show the gallery during normal new-article creation.
