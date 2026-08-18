@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3 - 2026-08-18
+
+- Rename the UI-facing skill title to `WeChat Article Designer` while retaining the `$wechat-article-designer` invocation name.
+
 ## 1.1.2 - 2026-08-18
 
 - Enforce an audience boundary so publishable articles cannot inherit chat history, feedback, approval prompts, local paths, or assistant work narration.
