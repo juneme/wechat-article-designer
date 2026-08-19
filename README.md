@@ -9,7 +9,7 @@
 - 24 种可组合视觉 DNA，避免将模板换色误作原创设计。
 - Steady / Creative 两种交付模式与明确的兼容性降级规则。
 - Paper Cut Artbook、Contour Field Notes、Still-frame Cinema 等艺术编辑方向。
-- 手机优先排版、照片占位、手动横向滑块和发布前风险审查。
+- 手机优先排版、照片占位、仅限最终区块实测的手动横向滑块和发布前风险审查。
 - 发布前扫描源请求回声、工作流叙述、验证痕迹与本地路径。
 - 照片框使用可编辑段落锚点：视觉样式和高度保留在 `section`，1px `p` 仅提供光标位置。
 - 公众号正文保持静态，不包含动效或状态性交互。
@@ -55,6 +55,7 @@ wechat-article-designer/
 $env:PYTHONUTF8='1'
 python "$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py" .
 python scripts/audit_audience_boundary.py article.html
+python scripts/audit_wechat_widths.py article.html
 ```
 
 ## 发布边界
@@ -62,7 +63,7 @@ python scripts/audit_audience_boundary.py article.html
 - 最终公众号正文不使用脚本、事件处理器、外部样式表或本地图片路径。
 - 写入草稿箱不等于正式发布；最终群发仍需在微信公众号后台完成预览与确认。
 - 手动换图使用空白照片框内的 1px 段落锚点。
-- 手动横向滑块必须同时提供可读的单列降级结构。
+- 手动横向滑块不得使用超宽中间层或裁切祖先层；必须另备单列版本，并以最终内容通过真实草稿箱验证。
 - 浏览器预览不能替代公众号草稿箱与手机预览验证。
 
 ## License

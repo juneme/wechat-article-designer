@@ -68,6 +68,7 @@ For manual editor delivery:
 - Use the editable-paragraph placeholder from `references/snippets.md`: the frame owns height and styling; one direct-child 1px `p` containing `&nbsp;` provides the caret.
 - Keep filename maps and replacement instructions outside the editable image container.
 - Prefer a single bitmap or single-column flow for dense repeated people or items. Use manual swipe only when the exact final block can be tested in WeChat.
+- A manual swipe container must hold its `inline-block` items directly. Never create an `N * V%` oversized intermediate strip or put `overflow:hidden` on an ancestor of the scroll container; partial editor rewrites can otherwise collapse or clip every frame.
 
 For direct draft delivery:
 
@@ -103,22 +104,24 @@ These rules apply to every final fragment:
 - No `position:absolute`, `position:relative`, or CSS Grid without exact-path real-editor evidence.
 - No table layout by default. Replace unstable tables with flow content.
 - Keep fixed widths within the mobile column and maintain deliberate horizontal baselines.
+- No percentage width above `100%` in a manual-editor fragment. Treat any oversized strip as unsafe even when a browser preview scrolls correctly.
 - Keep the first-screen spacing intentional; do not compensate for editor spacing with stacked empty wrappers.
 - Balance opening and closing counts for `section`, `p`, and `span`.
 
-Steady mode uses inline flow, solid fills, borders, alpha colors, radii, `inline-block`, compact flex, and verified manual overflow strips. Creative mode may add controlled gradients and shadows only with solid fallbacks and nonessential effects. The article must remain readable if those effects are removed.
+Steady mode uses inline flow, solid fills, borders, alpha colors, radii, `inline-block`, compact flex, and exact-block-tested manual overflow. Manual swipe is not a generally proven capability: use the direct-child pattern in `references/snippets.md` and keep a separate single-column version ready. Creative mode may add controlled gradients and shadows only with solid fallbacks and nonessential effects. The article must remain readable if those effects are removed.
 
 ## Quality gates
 
 Before delivery:
 
 1. Run the audience-boundary audit.
-2. Run the checklist in `references/snippets.md` and the mode rules in `references/creative-css-capabilities.md`.
-3. Check for active HTML, local paths, unverified positioning, Grid, fragile tables, unmatched tags, and unintended horizontal overflow.
-4. Review every promise, outcome claim, institutional term, incentive, brand name, and generated evidence image.
-5. Verify approximately 320px, 375px, and 390px widths. Check image loading, long-word wrapping, content order, and outer overflow.
-6. For Creative mode or fragile editor patterns, test the exact final fragment in the real WeChat phone preview when available.
-7. For direct delivery, require HTTPS `mmbiz.qpic.cn` body images, a permanent cover `media_id`, and a successful `validate-draft` result.
+2. Run `python scripts/audit_wechat_widths.py <article.html>` and resolve every finding.
+3. Run the checklist in `references/snippets.md` and the mode rules in `references/creative-css-capabilities.md`.
+4. Check for active HTML, local paths, unverified positioning, Grid, fragile tables, unmatched tags, and unintended horizontal overflow.
+5. Review every promise, outcome claim, institutional term, incentive, brand name, and generated evidence image.
+6. Verify approximately 320px, 375px, and 390px widths. Check image loading, long-word wrapping, content order, and outer overflow.
+7. For Creative mode or fragile editor patterns, test the exact final fragment in the real WeChat phone preview when available.
+8. For direct delivery, require HTTPS `mmbiz.qpic.cn` body images, a permanent cover `media_id`, and a successful `validate-draft` result.
 
 ## Resource router
 

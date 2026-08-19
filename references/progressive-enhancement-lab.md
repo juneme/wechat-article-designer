@@ -16,14 +16,14 @@ Never use a successful experiment-host render as evidence that host scripts, sty
 | Layer | Typical capabilities | Delivery rule |
 |---|---|---|
 | Core | `section / p / span`, inline style, solid fills, borders, spacing, type hierarchy | May enter the final fragment after deterministic audit. |
-| Conditional enhancement | Compact `display:flex`, `display:inline-block`, intentional `overflow-x:auto` strip | Keep content short, define a single-column fallback, and verify the exact final block in the real editor. |
+| Conditional enhancement | Compact `display:flex`, `display:inline-block`, intentional `overflow-x:auto` strip | Keep content short, use direct children without oversized widths, prepare a separate single-column version, and verify the exact final block in the real editor. |
 
 ## Degradation contract
 
 Every conditional enhancement needs an explicit degradation contract before use:
 
 - Removing `flex` must preserve item order and turn the row into a readable stack.
-- Removing horizontal overflow and oversized strip widths must turn the gallery into a readable single column.
+- Manual swipe has no reliable CSS-only fallback after selective editor sanitization. Keep a separate single-column artifact and use it whenever the exact swipe block fails the real-editor test.
 - Removing color, gradients, or shadows must not erase hierarchy or labels.
 - Removing text stroke, balanced wrapping, gradient borders, or patterned backgrounds must leave a readable solid-color and ordinary-border composition.
 - A failure may make the article plainer but must not hide content, change narrative order, or clip text.
@@ -46,14 +46,11 @@ A complete-fragment usability result is valid scoped evidence for that exact fra
 
 ## Manual swipe experiment
 
-For `N` cards where each card should occupy `V%` of the visible column:
+Put every card directly inside the scroll container and give each card the desired visible width `V%`, normally `84-90%`. The container uses `white-space:nowrap;font-size:0`; each direct child restores ordinary text flow with `display:inline-block;vertical-align:top;white-space:normal`.
 
-- oversized strip width = `N * V%`;
-- child width inside the strip = `100 / N%`.
+Do not add an intermediate strip with `width:N * V%`, do not use any percentage width above `100%`, and do not put `overflow:hidden` on an ancestor of the scroll container. WeChat can rewrite one declaration without rewriting the dependent declarations: clamping a `900%` strip to `100%` while retaining `10%` children reduces each card to one tenth of the visible column, and a clipping ancestor then hides the overflow.
 
-Example: four cards at `V = 86` use a `344%` strip and `25%` children. This leaves a 14% next-card cue. Add a static HTML swipe affordance because mobile WebViews may hide the native scrollbar. The affordance is not live progress.
-
-The fallback removes `overflow-x:auto`, resets the strip to `100%`, and makes every child `display:block;width:100%` in source order.
+Add a static HTML swipe affordance because mobile WebViews may hide the native scrollbar. The affordance is not live progress. If the exact final block fails in the editor, replace it with the separately maintained single-column version; do not claim that sanitization will automatically create the fallback.
 
 ## Recommended lab outputs
 

@@ -22,7 +22,7 @@ The complete `Contour Index / 07` fragment passed a WeChat compatibility check. 
 
 ### Steady mode
 
-Use inline styles, flow layout, solid fills, borders, alpha colors, large or pill radii, `inline-block`, compact `flex`, and verified manual `overflow-x:auto` strips. Prefer this mode when the brief emphasizes predictable editing, regulated information, or many future copy changes.
+Use inline styles, flow layout, solid fills, borders, alpha colors, large or pill radii, `inline-block`, and compact `flex`. Manual `overflow-x:auto` is an exact-block exception: use direct children, never an oversized intermediate strip, and require a fresh real-editor test. Prefer this mode when the brief emphasizes predictable editing, regulated information, or many future copy changes.
 
 ### Creative mode
 
@@ -39,7 +39,8 @@ Creative mode is a supported delivery mode, not an error condition. Use Creative
 | Large and pill `border-radius` | Proven core | Values such as `22px`, `30px`, `50%`, and `999px` are allowed. |
 | `display:inline-block` | Proven core | Use for markers, inline rules, badges, and compact rows. |
 | `display:flex` | Proven core | Use for short two-part heroes, CTA/QR rows, and compact information rows; supply a single-column fallback for copy-heavy or image-heavy content. |
-| `overflow-x:auto` + oversized strip | Proven exception | Use only for intentional manual swipe galleries; no autoplay claim or JavaScript. |
+| `overflow-x:auto` with direct `inline-block` children | Exact-block exception | Never use an `N * V%` intermediate strip or a clipping ancestor. Test the final content in the real editor; otherwise deliver the single-column version. |
+| Percentage width above `100%` | Unsafe for manual delivery | WeChat may clamp or remove the parent width while preserving fractional child widths, collapsing frames and text. |
 | `overflow:hidden` | Proven core | Use for clipped fills, rounded surfaces, and frames. |
 | `box-shadow` | Creative | Keep subtle, nonessential, and easy to remove; verify phone preview. |
 | Gradients | Creative | Precede with a solid fallback on the same element; verify color and contrast after paste. |

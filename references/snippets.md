@@ -26,6 +26,7 @@ Manual image slots use the real-editor-verified editable-paragraph contract: put
 | Flow Photo Frame (Event Recap) | A low-decoration, full-width event photo slot with a small index strip. |
 | Event Recap Chapter Header | A spacious numbered chapter break for mobile event stories. |
 | Node Divider | A light visual pause between dense photo or copy groups. |
+| Manual Swipe Gallery (Exact-Block Exception) | Only when individual images must remain swipeable and the final block can be tested in WeChat. |
 | 4:5 Portrait Collage Wall (Single Bitmap) | Show many people as one pre-composed mobile-safe image instead of HTML cells. |
 | Repeated Speaker Card (Single-Column) | When a section lists many people and each person needs a photo placeholder plus a short text stack. |
 | Centered QR Placeholder (Dark Footer) | When a dark closing section needs a small centered QR or square-asset placeholder. |
@@ -173,6 +174,38 @@ Use as a quiet pause after 2-3 consecutive photos or between two short narrative
 ```
 
 Do not add explanatory copy inside the divider. The divider controls rhythm rather than adding content.
+
+## Manual Swipe Gallery (Exact-Block Exception)
+
+Default to a single-column flow. Use this pattern only when individual images must remain swipeable and the exact final block can be pasted into the real WeChat editor and checked in phone preview.
+
+```html
+<section style="box-sizing:border-box;margin:24px 8px 0;padding:0;">
+  <p style="margin:0;font-size:14px;line-height:1.7;color:{{BRAND_TEXT}};font-weight:800;">{{GALLERY_TITLE}}</p>
+  <section style="box-sizing:border-box;margin:14px 0 0;padding:0;overflow-x:auto;overflow-y:hidden;white-space:nowrap;font-size:0;line-height:0;-webkit-overflow-scrolling:touch;">
+    <section style="box-sizing:border-box;display:inline-block;vertical-align:top;width:88%;margin:0 10px 0 0;padding:0;white-space:normal;font-size:14px;line-height:1.6;">
+      <section style="box-sizing:border-box;min-height:96px;margin:0;padding:6px;background:#ffffff;border:1px solid {{BRAND_GRID_BORDER}};overflow:hidden;text-align:center;">
+        <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
+      </section>
+      <p style="margin:9px 2px 0;font-size:12px;line-height:1.7;color:{{BRAND_CAPTION}};white-space:normal;">01 / {{CAPTION_1}}</p>
+    </section><section style="box-sizing:border-box;display:inline-block;vertical-align:top;width:88%;margin:0;padding:0;white-space:normal;font-size:14px;line-height:1.6;">
+      <section style="box-sizing:border-box;min-height:96px;margin:0;padding:6px;background:#ffffff;border:1px solid {{BRAND_GRID_BORDER}};overflow:hidden;text-align:center;">
+        <p style="margin:0;padding:0;font-size:1px;line-height:1px;color:transparent;">&nbsp;</p>
+      </section>
+      <p style="margin:9px 2px 0;font-size:12px;line-height:1.7;color:{{BRAND_CAPTION}};white-space:normal;">02 / {{CAPTION_2}}</p>
+    </section>
+  </section>
+  <p style="margin:7px 0 0;font-size:11px;line-height:1.6;color:{{BRAND_CAPTION}};text-align:right;">左右轻扫阅览</p>
+</section>
+```
+
+Required invariants:
+
+- Every card is a direct child of the `overflow-x:auto` container. Repeat that direct child for additional cards.
+- Card width is the intended visible width, normally `84-90%`. No width in the fragment may exceed `100%`.
+- Do not add an oversized intermediate strip. Do not put `overflow:hidden` on the gallery wrapper or any ancestor of the scroll container; clipping belongs only inside each photo frame.
+- Run `python scripts/audit_wechat_widths.py <article.html>`, then test the exact final block with final captions and images in the real editor.
+- Maintain a separate single-column version. If the editor rewrites or clips the swipe block, deliver the single-column version instead of adding width overrides.
 
 ## 4:5 Portrait Collage Wall (Single Bitmap)
 
@@ -492,6 +525,7 @@ Use these exact diagnostics for common issues:
 - **Top of article is empty**: "The WeChat editor adds default spacing above the article body. Set the first section's padding-top to 0."
 - **Photo frame doesn't show**: "Local image paths don't work in WeChat. Use a placeholder HTML frame, then upload the photo in the editor."
 - **Speaker wall looks cut off**: "The card wall is too dense for the WeChat editor. Switch to a single-column speaker-card flow or a simpler repeated-card layout."
+- **Swipe frames shrink or disappear**: "The gallery likely couples an oversized parent width with fractional child widths. Remove the intermediate strip, place `84-90%` items directly inside the scroll container, and remove clipping from every gallery ancestor."
 - **Layout stretches or gains horizontal scrolling after paste**: "WeChat wrapped the table in a horizontal scroller and reset cell widths. Replace the whole table with `section` / `p` / `span` flow; extra `td` width rules will not make the block reliable."
 - **QR code area becomes full width**: "The QR placeholder inherited a row-level wrapper. Use a narrow centered `section` as the visual frame."
 
@@ -500,6 +534,8 @@ Use these exact diagnostics for common issues:
 Run these checks before declaring an article ready:
 
 - [ ] Comparable content blocks follow the design fingerprint's deliberate outer and inset baselines; no fixed width exceeds the mobile column.
+- [ ] `scripts/audit_wechat_widths.py` returns zero findings; no percentage width exceeds `100%`, and no swipe container sits inside an `overflow:hidden` ancestor.
+- [ ] Every manual swipe item is a direct child of its scroll container, the exact final block passed real-editor phone preview, and a separate single-column version exists.
 - [ ] Opening whitespace is intentional: immersive heroes may start at `padding-top:0`, while editorial or quiet openers may use approximately `18-40px`.
 - [ ] Photo frames match one selected visual register; rounded and institutional frame languages are not mixed casually.
 - [ ] Every manual photo or QR slot keeps visual styles on a `section`, contains one direct-child 1px `<p>` with one `&nbsp;`, has no padded instruction paragraph, and has no delete-first handoff wording.
