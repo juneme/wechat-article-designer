@@ -19,7 +19,7 @@
   </g>
   <rect x="126" y="194" width="88" height="22" fill="#07C160"/>
   <text x="126" y="257" fill="#171712" font-family="Arial, sans-serif" font-size="50" font-weight="800">ARTICLE</text>
-  <text x="126" y="307" fill="#171712" font-family="Arial, sans-serif" font-size="50" font-weight="800">WITH A POINT</text>
+  <text x="126" y="307" fill="#171712" font-family="Arial, sans-serif" font-size="44" font-weight="800">WITH A POINT</text>
   <rect x="126" y="336" width="320" height="2" fill="#171712"/>
   <rect x="126" y="368" width="262" height="12" fill="#CBC5BA"/>
   <rect x="126" y="394" width="306" height="12" fill="#DAD5CC"/>
