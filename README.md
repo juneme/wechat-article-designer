@@ -31,6 +31,29 @@
 
 设计知识会持续扩展，但不会变成模板选择器。每次创作都必须从当前文章重新建立内容结构与设计契约；历史案例只提供可组合的设计能力。
 
+![不选固定模板，从文章内容建立设计系统](docs/images/social/design-from-content.png)
+
+## 设计输出示例
+
+同一套 Skill 会根据文章主题改变信息结构、视觉母题与文字节奏。下面三张是编辑叙事、数据报告和人物故事的独立示例，不是可重复套用的固定模板。
+
+<table>
+  <tr>
+    <td width="33%" align="center">
+      <a href="docs/images/social/creative-editorial.png"><img src="docs/images/social/creative-editorial.png" alt="编辑叙事风格公众号文章示例"></a><br>
+      <sub>编辑叙事 / 城市观察</sub>
+    </td>
+    <td width="33%" align="center">
+      <a href="docs/images/social/creative-data-story.png"><img src="docs/images/social/creative-data-story.png" alt="数据报告风格公众号文章示例"></a><br>
+      <sub>数据报告 / 产品故事</sub>
+    </td>
+    <td width="33%" align="center">
+      <a href="docs/images/social/creative-human-story.png"><img src="docs/images/social/creative-human-story.png" alt="人物故事风格公众号文章示例"></a><br>
+      <sub>人物故事 / 社区记录</sub>
+    </td>
+  </tr>
+</table>
+
 ## 安装
 
 ```powershell
