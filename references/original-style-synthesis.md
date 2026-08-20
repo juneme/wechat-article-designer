@@ -1,65 +1,84 @@
 # Original Style Synthesis
 
-Use this reference for every new full-article creation unless faithful reuse of a named template is explicitly requested.
+Use this reference for every new full article. The goal is not to select the closest learned page; it is to synthesize an article-specific system from the complete living grammar.
 
-## Read the article before choosing a look
+## Read the article before design
 
-Extract these signals from the brief, copy, images, and audience:
+Build a private content map:
 
-- institutional vs personal;
-- urgent vs reflective;
-- youthful vs mature;
+- target reader and reading context;
+- narrator and ownership;
+- literal topic and desired action;
+- verified facts, evidence images, and claim limits;
+- urgent vs reflective, youthful vs mature, ceremonial vs everyday;
 - dense information vs visual storytelling;
-- image-led vs text-led;
-- ceremonial vs everyday;
-- desired reader action;
-- dominant objects, metaphors, places, dates, or processes in the story.
+- image-led, type-led, or evidence-led;
+- dominant objects, metaphors, places, dates, routes, materials, or processes;
+- expected reading duration and likely points of reader fatigue.
 
-Do not request a visual-template selection when these inputs are sufficient. Infer a direction and proceed.
+Do not request a visual-template selection when these signals are sufficient.
 
-## Build a design fingerprint
+## Build structure and type first
 
-Define a private design fingerprint before writing HTML:
+1. Read `modular-composition-system.md` and map payload to semantic module roles.
+2. Read `typography-system.md` and define display, section, item, body, label, caption, and data roles supported by the copy.
+3. Set the density curve: where the article declares, proves, pauses, explains, asks, and closes.
 
-1. **Visual thesis** - one sentence explaining why this article should look this way.
-2. **Palette behavior** - light, dark, high-contrast, muted, paper-like, fluorescent, seasonal, or image-sampled.
-3. **Opening mechanism** - typographic field, editorial masthead, asymmetric label stack, photo-led opener, numbered prologue, or another content-native device.
-4. **Section rhythm** - open prose, alternating bands, indexed chapters, edge-coded rows, image pauses, swipe sequence, or a custom progression.
-5. **Edge geometry** - hard, rounded, pill, ruled, inset, clipped, or mixed with a clear hierarchy.
-6. **Image behavior** - full-bleed placeholder, framed evidence, contact sheet, portrait wall, manual swipe, or quiet single-image pauses.
-7. **Recurring motif** - derive one motif from the article's subject, such as a route, shelf mark, timestamp, ticket stub, waveform, page tab, constellation, or field note.
-8. **Closing device** - resolve the story with a distinct visual action rather than repeating the opener or another card.
-9. **Delivery mode** - Steady or Creative, selected from the requested impact and publishing constraints.
+Do not choose a surface, card, or source-derived visual move until these decisions exist.
 
-## Use the library as design DNA
+## Synthesize across the living grammar
 
-Read `GALLERY.md` as an internal DNA catalog. Borrow capabilities across dimensions, not a whole DOM tree:
+Read `GALLERY.md`. Evaluate every normalized dimension against the content map:
 
-- use one source for contrast or palette behavior;
-- use another for typography or editorial hierarchy;
-- use another for edge geometry, image rhythm, or CTA treatment;
-- invent the recurring motif from this article's actual content.
+1. **Visual thesis** - one sentence explaining why the article should look this way.
+2. **Palette behavior** - field, ink, primary signal, secondary signal, correction color, and image authority.
+3. **Type behavior** - hierarchy, weight contrast, data voice, line rhythm, and label behavior.
+4. **Opening mechanism** - literal typographic field, photo-led statement, editorial masthead, evidence preview, numbered prologue, or another content-native device.
+5. **Section rhythm** - open prose, evidence ledger, alternating media turns, indexed chapters, full bands, or a custom progression.
+6. **Geometry** - one primary edge language and any semantically justified exception.
+7. **Image behavior** - evidence frame, full-width pause, portrait study, contact sheet, object sequence, or no image.
+8. **Recurring motif** - derive it from the article's subject, never from a generic style label.
+9. **Closing device** - resolve the argument, ownership, or action without repeating the opener.
+10. **Delivery mode** - Steady or Creative with a readable static fallback.
 
-Keep one dominant visual thesis and at most two secondary gestures. Do not produce a random collage of recognizable template parts.
+The living grammar already incorporates all learned sources. Normal generation must not enumerate them or pick a winner. A source name may be consulted only when one routed capability needs evidence.
 
-## Originality gates
+## Write the private design contract
 
-For an original synthesis, all of these must be true:
+Before HTML, record:
 
-- Do not copy one starter asset as the complete section order or DOM skeleton.
-- Do not preserve the same opener + repeated-card stack + closing sequence from the nearest example.
-- Make at least three article-specific design decisions from the content, including one recurring motif and one image or section behavior.
-- Depart structurally from the nearest library example in at least two major areas: opener, section rhythm, content containers, image treatment, navigation, or closing.
-- Do not reuse example names, dates, slogans, prices, claims, addresses, image filenames, or topic-specific copy.
-- Do not call a recolor, radius change, or font-size change a new style.
-- Keep the result coherent when gradients and shadows are removed; originality must come from composition, not effects alone.
+- summary and visual thesis;
+- palette roles;
+- type plan;
+- module sequence and density curve;
+- signature components and media behavior;
+- `must_keep` decisions;
+- `avoid` decisions;
+- evidence boundary;
+- Steady fallback.
 
-If the result still resembles one template at a glance, revise the design fingerprint before delivery.
+This contract belongs to the article. Do not copy a learned source's complete order into it.
 
-## Explicit-template exception
+## Anti-template gates
 
-When reproduction or close adherence to a named template is explicitly requested, treat the asset as a structural starter. Still adapt copy density, image roles, palette, accessibility, and compliance to the article. Do not show the full library unless style browsing is explicitly requested.
+All gates must pass:
+
+- The opener is justified by the article's literal topic, not by the nearest sample.
+- The module order follows the argument and evidence, not an asset's placeholder order.
+- Typography has a content-specific hierarchy; changing only colors and radii is not a new design.
+- At least one motif, media behavior, or section transition comes from the article's subject.
+- One module is visually dominant and the density rises and falls deliberately.
+- Repeated containers hold genuinely comparable records with the same schema.
+- The closing performs a different reader job from the opener.
+- Removing gradients, shadows, and decorative marks preserves reading order and action.
+- The result differs meaningfully from the nearest learned source in opener, density curve, type behavior, and at least one of media, geometry, or close.
+
+If the result still looks like one source page with new copy, revise the contract before writing or delivering HTML.
+
+## Explicit visual reference
+
+When the user explicitly requests close visual correspondence, preserve the reference's thesis, palette behavior, type relationship, or signature move. Still rebuild module order, body typography, image roles, evidence, and fallback around the final article. Exact web interaction and complete DOM reproduction are not implied.
 
 ## Handoff
 
-State the new style name in one short line and summarize the design thesis. Keep the internal template-mixing process outside the handoff.
+State the synthesized style name and its one-line thesis. Keep source comparison, internal scoring, and learning history outside the publishable article.
