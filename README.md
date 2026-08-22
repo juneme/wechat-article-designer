@@ -102,10 +102,9 @@ python scripts/audit_audience_boundary.py article.html
 python scripts/audit_wechat_widths.py article.html
 python scripts/audit_wechat_typography.py article.html
 python scripts/audit_wechat_contrast.py article.html
-python -m unittest discover -s tests -v
 ```
 
-浏览器预览不能替代微信公众号编辑器与手机预览。仓库不携带固定文章 HTML、项目测试数据或真实公众号凭据。
+浏览器预览不能替代微信公众号编辑器与手机预览。仓库不携带固定文章 HTML、研究过程数据、本地文章数据或真实公众号凭据。
 
 ## License
 

@@ -34,4 +34,4 @@ Learn relationships, not branding, theme names, complete page order, component c
 
 Only merged reusable rules may remain in the Skill. Keep all working research outside it and discard those artifacts after synthesis.
 
-Before finishing, scan the entire Skill for source-specific data, dead references, fixed theme counts, template-selection logic, test artifacts, and local paths. Run Skill validation and the maintained code tests.
+Before finishing, scan the entire Skill for source-specific data, dead references, fixed theme counts, template-selection logic, temporary artifacts, and local paths. Run Skill validation and lint the executable code.
