@@ -2,7 +2,7 @@
 
 Use only the blocks required by the article's module manifest. Replace every bracketed field with final copy, adapt colors and spacing to the article's design contract, and keep Chinese letter spacing at `0`.
 
-## Copy boundary
+## Publishable boundary
 
 ```html
 <!-- 微信公众号复制开始 -->
@@ -12,11 +12,11 @@ Use only the blocks required by the article's module manifest. Replace every bra
 <!-- 微信公众号复制结束 -->
 ```
 
-Only content inside the boundary is copied to WeChat. Asset maps, replacement instructions, design notes, and validation results stay outside.
+Only content inside the boundary is synchronized into the server draft payload. The comments are parser markers, not a clipboard feature. Asset maps, replacement instructions, design notes, and validation results stay outside.
 
 ## Editable image placeholder
 
-Use for manual editor delivery. The frame owns its height and styling. Keep exactly one direct-child 1px paragraph so the editor exposes a caret without visible placeholder copy.
+Use during preview preparation before the final image is uploaded through the console server. The frame owns its height and styling. Keep exactly one direct-child 1px paragraph so the editor exposes a caret when manual inspection is necessary.
 
 ```html
 <section style="height:220px;margin:24px 8px 0;padding:0;background:#F2F2F0;border:1px solid #D8D8D4;overflow:hidden;">
@@ -109,6 +109,92 @@ If there is no requested reader action, use a quiet closing rather than an artif
 ```
 
 Place the qualifier near the claim it limits when possible. A closing disclaimer must not contradict stronger promises earlier in the article.
+
+## Terminal or code card
+
+Use only for real commands, code, logs, or technical identifiers. Do not set narrative Chinese prose in a terminal style.
+
+```html
+<section style="margin:24px 8px 0;padding:0;background:#202020;border:1px solid #3A3A38;border-radius:6px;overflow:hidden;">
+  <p style="margin:0;padding:10px 14px;background:#2A2A28;color:#D8D8D4;font-size:12px;line-height:1.5;letter-spacing:0;">
+    <span style="color:#FF6B5E;">●</span>
+    <span style="color:#F0C84B;">●</span>
+    <span style="color:#67C587;">●</span>
+    <span style="color:#A8A8A2;"> [Meaningful filename or environment]</span>
+  </p>
+  <p style="margin:0;padding:16px 14px;color:#F2F2F0;font-size:13px;line-height:1.75;letter-spacing:0;font-family:Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;">[Exact command or code]</p>
+</section>
+```
+
+Keep commands exact and keep explanations outside the code surface. The colored dots are a quiet file-window cue, not a reason to turn every quote into a terminal.
+
+## Dialogue or interview record
+
+Preserve speaker identity and reading order in ordinary flow. Color may distinguish speakers but cannot be the only identity signal.
+
+```html
+<section style="margin:24px 8px 0;padding:0;">
+  <section style="margin:0;padding:0 0 0 14px;border-left:3px solid #3155F5;">
+    <p style="margin:0;color:#3155F5;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">采访者 · [姓名或角色]</p>
+    <p style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;letter-spacing:0;">[问题]</p>
+  </section>
+  <section style="margin:18px 0 0;padding:0 0 0 14px;border-left:3px solid #67A57B;">
+    <p style="margin:0;color:#477A57;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">受访者 · [姓名或角色]</p>
+    <p style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;letter-spacing:0;">[回答]</p>
+  </section>
+</section>
+```
+
+Use quotation marks only for verbatim speech. Do not rewrite a summary as a fabricated direct quote.
+
+## Timeline milestone
+
+Use repeated single-column rows. Each row owns its line, so editor rewriting cannot displace a separately positioned axis.
+
+```html
+<section style="margin:24px 8px 0;padding:0;">
+  <section style="margin:0;padding:0 0 20px 16px;border-left:2px solid #202020;">
+    <p style="margin:0;color:#6A6A66;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">[DATE OR VERSION]</p>
+    <p style="margin:6px 0 0;color:#202020;font-size:18px;line-height:1.55;font-weight:700;letter-spacing:0;">[Milestone]</p>
+    <p style="margin:7px 0 0;color:#50504C;font-size:14px;line-height:1.8;letter-spacing:0;">[Verified outcome, scope, or qualifier]</p>
+  </section>
+  <section style="margin:0;padding:0 0 0 16px;border-left:2px solid #CFCFCA;">
+    <p style="margin:0;color:#6A6A66;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">[DATE OR VERSION]</p>
+    <p style="margin:6px 0 0;color:#202020;font-size:18px;line-height:1.55;font-weight:700;letter-spacing:0;">[Milestone]</p>
+    <p style="margin:7px 0 0;color:#50504C;font-size:14px;line-height:1.8;letter-spacing:0;">[Verified outcome, scope, or qualifier]</p>
+  </section>
+</section>
+```
+
+Dates, versions, and causal claims must come from the supplied evidence. Do not imply continuous progress merely because events are shown on a timeline.
+
+## Progress bar
+
+Keep the numeric value visible as text. Set the inner bar width to the same verified percentage and never use visual length as the only data carrier.
+
+```html
+<section style="margin:24px 8px 0;padding:0;">
+  <p style="margin:0;color:#202020;font-size:15px;line-height:1.6;font-weight:700;letter-spacing:0;">[Metric] · 68%</p>
+  <section style="height:8px;margin:9px 0 0;padding:0;background:#E5E5E1;overflow:hidden;">
+    <section style="width:68%;height:8px;margin:0;padding:0;background:#3155F5;">
+      <p style="margin:0;padding:0;font-size:1px;line-height:1px;letter-spacing:0;">&nbsp;</p>
+    </section>
+  </section>
+  <p style="margin:7px 0 0;color:#6A6A66;font-size:12px;line-height:1.7;letter-spacing:0;">[Unit, sample, date, source, or interpretation boundary]</p>
+</section>
+```
+
+## Minimal rating card
+
+Use only when the scale and scoring method are meaningful. A rating without a denominator or source is decorative, not evidence.
+
+```html
+<section style="margin:24px 8px 0;padding:16px 0;border-top:1px solid #CFCFCA;border-bottom:1px solid #CFCFCA;">
+  <p style="margin:0;color:#6A6A66;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;">[RATING LABEL]</p>
+  <p style="margin:6px 0 0;color:#202020;font-size:28px;line-height:1.35;font-weight:700;letter-spacing:0;">8.6 <span style="color:#76766F;font-size:14px;font-weight:400;">/ 10</span></p>
+  <p style="margin:7px 0 0;color:#50504C;font-size:13px;line-height:1.75;letter-spacing:0;">[Scoring method, sample, source, and date]</p>
+</section>
+```
 
 ## Pre-publish checklist
 

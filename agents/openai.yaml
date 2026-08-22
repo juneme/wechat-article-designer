@@ -1,4 +1,4 @@
 interface:
   display_name: "WeChat Article Designer"
   short_description: "Create, validate, and deliver WeChat articles"
-  default_prompt: "Use $wechat-article-designer to create or revise a mobile-first WeChat article, validate the result, and deliver HTML or a draft as requested."
+  default_prompt: "Use $wechat-article-designer to create or revise a mobile-first WeChat article in a versioned workspace, validate the result, and prepare a preview or authorized server draft."

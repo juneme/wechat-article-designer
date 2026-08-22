@@ -53,6 +53,8 @@ These are defaults, not a required scale. Preserve a clear ratio between adjacen
 - Caption after media: usually `8-12px`.
 - Dense fact rows: `14-18px` internal vertical padding with neutral dividers.
 - Follow a dense list with open prose, a media pause, or a larger section break. Do not repeat equal card gaps through the whole article.
+- Treat those values as a semantic scale, not a metronome. Distance should grow from same-thought grouping to continuation, turn, chapter, and closing pause.
+- Do not use a border, background, label, or card when spacing and type hierarchy already express the relationship.
 
 ## Emphasis budget
 
@@ -63,6 +65,8 @@ Choose one primary emphasis and at most two supporting signals:
 - correction: a rare warning or editorial mark.
 
 Bold, color, border, background, shadow, and oversized type must not all emphasize the same sentence.
+
+Review emphasis at viewport level: about two strong moments in one mobile screen is usually enough. This is a warning threshold rather than a required count; evidence-heavy passages may differ, but consecutive strong treatments still need a clear hierarchy.
 
 ## Typography review
 

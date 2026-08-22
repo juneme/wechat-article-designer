@@ -27,32 +27,10 @@
 | 综合风格 | 从动态设计语法生成本文专属的色彩、构图、媒介节奏与视觉母题 |
 | 组织文字 | 为标题、章节、正文、标签、说明和数据建立中文移动排版层级 |
 | 构建文章 | 生成带内联样式的公众号 HTML 片段，并为不稳定效果提供静态降级 |
+| 管理版本 | 每篇文章使用独立工作区，同步片段、预览、草稿 JSON、资产与历史版本 |
 | 校验交付 | 审查受众边界、宽度、字距、对比度与编辑器兼容性，按授权预览或写入草稿 |
 
 设计知识会持续扩展，但不会变成模板选择器。每次创作都必须从当前文章重新建立内容结构与设计契约；历史案例只提供可组合的设计能力。
-
-![不选固定模板，从文章内容建立设计系统](docs/images/social/design-from-content.png)
-
-## 设计输出示例
-
-同一套 Skill 会根据文章主题改变信息结构、视觉母题与文字节奏。下面三张是编辑叙事、数据报告和人物故事的独立示例，不是可重复套用的固定模板。
-
-<table>
-  <tr>
-    <td width="33%" align="center">
-      <a href="docs/images/social/creative-editorial.png"><img src="docs/images/social/creative-editorial.png" alt="编辑叙事风格公众号文章示例"></a><br>
-      <sub>编辑叙事 / 城市观察</sub>
-    </td>
-    <td width="33%" align="center">
-      <a href="docs/images/social/creative-data-story.png"><img src="docs/images/social/creative-data-story.png" alt="数据报告风格公众号文章示例"></a><br>
-      <sub>数据报告 / 产品故事</sub>
-    </td>
-    <td width="33%" align="center">
-      <a href="docs/images/social/creative-human-story.png"><img src="docs/images/social/creative-human-story.png" alt="人物故事风格公众号文章示例"></a><br>
-      <sub>人物故事 / 社区记录</sub>
-    </td>
-  </tr>
-</table>
 
 ## 安装
 
@@ -84,14 +62,29 @@ python scripts/wechat_console_api.py status
 
 完整的图片上传、封面处理、草稿校验和幂等规则见 [`references/direct-publishing.md`](references/direct-publishing.md)。预览、排版和上传图片都不代表授权创建草稿；写入草稿箱也不等于正式群发。
 
+## 文章工作区
+
+先为文章建立独立目录，避免下一篇文章覆盖当前资产：
+
+```powershell
+python scripts/article_workspace.py create --title '文章标题' --date 'YYYY-MM-DD'
+```
+
+编辑 `fragment.html` 和 `article.json` 后执行同步：
+
+```powershell
+python scripts/article_workspace.py sync '.\articles\日期_标题'
+```
+
+同步会更新服务端草稿正文、生成无脚本预览、仅在草稿数据变化时轮换幂等 ID，并把已准备状态归档到 `revisions/`。详见 [`references/article-workspaces.md`](references/article-workspaces.md)。预览页不提供剪贴板复制功能。
+
+## SVG 互动排版
+
+SVG 是 Creative 模式中的稳定编辑能力。需要揭晓、对比、切换、横向序列、形态变化或节奏强调时，按 [`references/svg-design-genes.md`](references/svg-design-genes.md) 从文章内容和 Visual DNA 原创组件。关键信息应在初始状态或相邻正文中完整可读，不需要重复的静态回退块或额外的 SVG 验证流程。
+
 ## 持续学习
 
-学习新设计来源时，Skill 会覆盖公开集合与详情页，将观察结果结构化为色彩、文字、构图、媒介、节奏、证据边界和可降级行为，再把真正新增的能力合并进动态设计语法。来源条目数只用于覆盖审计，不限定可用风格数量。
-
-当前 Superdesign 学习快照与逐条索引：
-
-- [`references/superdesign-study-2026-08-20.md`](references/superdesign-study-2026-08-20.md)
-- [`references/superdesign-record-index-2026-08-20.md`](references/superdesign-record-index-2026-08-20.md)
+学习新设计来源时，只把可复用的文字、构图、媒介、节奏和交互关系合并进核心设计语法；全部研究过程材料都留在 Skill 之外并在综合后丢弃。
 
 ## 验证
 
@@ -109,6 +102,7 @@ python scripts/audit_audience_boundary.py article.html
 python scripts/audit_wechat_widths.py article.html
 python scripts/audit_wechat_typography.py article.html
 python scripts/audit_wechat_contrast.py article.html
+python -m unittest discover -s tests -v
 ```
 
 浏览器预览不能替代微信公众号编辑器与手机预览。仓库不携带固定文章 HTML、项目测试数据或真实公众号凭据。

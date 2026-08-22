@@ -18,17 +18,18 @@ Build a private content map:
 
 Do not request a visual-template selection when these signals are sufficient.
 
-## Build structure and type first
+## Build writing, structure, and type first
 
-1. Read `modular-composition-system.md` and map payload to semantic module roles.
-2. Read `typography-system.md` and define display, section, item, body, label, caption, and data roles supported by the copy.
-3. Set the density curve: where the article declares, proves, pauses, explains, asks, and closes.
+1. Read `editorial-writing-grammar.md` and make the unstyled draft establish a defensible promise, reasoning path, and evidence boundary.
+2. Read `modular-composition-system.md` and map payload to semantic module roles.
+3. Read `typography-system.md` and define display, section, item, body, label, caption, and data roles supported by the copy.
+4. Set the density curve: where the article declares, proves, pauses, explains, asks, and closes.
 
 Do not choose a surface, card, or source-derived visual move until these decisions exist.
 
 ## Synthesize across the living grammar
 
-Read `GALLERY.md`. Evaluate every normalized dimension against the content map:
+Read `design-grammar.md`. Evaluate every normalized dimension against the content map:
 
 1. **Visual thesis** - one sentence explaining why the article should look this way.
 2. **Palette behavior** - field, ink, primary signal, secondary signal, correction color, and image authority.
@@ -41,7 +42,7 @@ Read `GALLERY.md`. Evaluate every normalized dimension against the content map:
 9. **Closing device** - resolve the argument, ownership, or action without repeating the opener.
 10. **Delivery mode** - Steady or Creative with a readable static fallback.
 
-The living grammar already incorporates all learned sources. Normal generation must not enumerate them or pick a winner. A source name may be consulted only when one routed capability needs evidence.
+The living grammar contains only normalized design decisions, not source records. Normal generation must not reconstruct a source catalog or pick a source winner.
 
 ## Write the private design contract
 
@@ -65,15 +66,17 @@ All gates must pass:
 
 - The opener is justified by the article's literal topic, not by the nearest sample.
 - The module order follows the argument and evidence, not an asset's placeholder order.
+- The title, opening, headings, comparisons, and closing expose the real reasoning path without relying on components.
 - Typography has a content-specific hierarchy; changing only colors and radii is not a new design.
 - At least one motif, media behavior, or section transition comes from the article's subject.
 - One module is visually dominant and the density rises and falls deliberately.
 - Repeated containers hold genuinely comparable records with the same schema.
 - The closing performs a different reader job from the opener.
 - Removing gradients, shadows, and decorative marks preserves reading order and action.
-- The result differs meaningfully from the nearest learned source in opener, density curve, type behavior, and at least one of media, geometry, or close.
+- The result differs meaningfully from any recognizable reference or prior article in opener, density curve, type behavior, and at least one of media, geometry, or close.
+- No finite theme catalog, source theme name, or theme selector is used to generate the design contract.
 
-If the result still looks like one source page with new copy, revise the contract before writing or delivering HTML.
+If the result still looks like one reference page or prior article with new copy, revise the contract before writing or delivering HTML.
 
 ## Explicit visual reference
 

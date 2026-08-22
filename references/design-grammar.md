@@ -7,10 +7,11 @@ This is a growing system of design decisions, not a template gallery or a finite
 | Layer | Decides | Source |
 |---|---|---|
 | Content map | Reader, purpose, evidence, action, mood, density, image roles | Final brief |
+| Editorial promise | Situation, friction, judgment, gain, evidence boundary, reasoning path | `references/editorial-writing-grammar.md` |
 | Module manifest | Semantic blocks, order, width, weight, density curve | `references/modular-composition-system.md` |
 | Type plan | Display, section, body, label, caption, data hierarchy | `references/typography-system.md` |
 | Living grammar | Palette, composition, geometry, media, pacing, close | This file |
-| Design contract | Article-specific thesis and must/avoid/fallback rules | `references/original-style-synthesis.md` |
+| Design contract | Article-specific thesis and must/avoid/fallback rules | `references/article-design-synthesis.md` |
 | Implementation | Copy-safe inline blocks | `references/snippets.md` |
 
 ## Visual field and color
@@ -35,6 +36,7 @@ Apply these relationships through `references/typography-system.md`. Source font
 
 ## Composition and density
 
+- **Recognition to judgment**: familiar situation, concrete friction, defensible judgment, then the evidence or method that earns it.
 - **Declaration to evidence**: strong literal opener, compact orientation, dense proof, then open explanation.
 - **Photo and chapter turns**: alternate media and prose so neither becomes a continuous wall.
 - **Indexed editorial**: use chapter numbers, timestamps, routes, stages, or other content-native indices.
@@ -44,6 +46,8 @@ Apply these relationships through `references/typography-system.md`. Source font
 - **Quiet essay**: sparse opener, long-form body, rare rules, and one material or image interruption.
 
 Every article needs a density curve. Repeating equal cards from opener to close is a failed composition.
+
+Keep ordinary prose open. Use strong surfaces for semantic events such as a decision, proof, ordered process, meaningful comparison, or true chapter turn. Let whitespace express increasing semantic distance from same-thought grouping through continuation, turn, chapter, and close. Review any viewport containing more than about two strong components and avoid uninterrupted runs of equal emphasis.
 
 ## Geometry and surfaces
 
@@ -65,6 +69,18 @@ Choose one primary edge language. Mix geometries only when their roles explain t
 - illustration for mood or explanation, never as factual proof.
 
 Images must perform a reader job. Remove decorative media that interrupts the argument without adding meaning.
+
+## Article-level Visual DNA
+
+Compose one Visual DNA from the article's literal subject, evidence, emotional register, and image authority. It should coordinate:
+
+- body field, ink, signals, and image-derived support colors;
+- contour, material, rule, and surface behavior;
+- title and section massing, open-prose rhythm, and emphasis density;
+- image palette, medium, crop logic, composition, and narrative distance;
+- a content-native motif or metaphor that can recur without becoming decoration.
+
+Every image may perform a different job, but it should still belong to the same article. Theme difference cannot be a recolor: a substantially different direction changes at least two of contour, spatial rhythm, material, typography, media behavior, or governing metaphor.
 
 ## Translate web interaction to static reading
 
@@ -90,10 +106,11 @@ Learn hierarchy, reveal order, depth, and sequence. Do not import scripts, hidde
 5. Derive at least one motif, media behavior, or transition from the article's literal subject.
 6. Give one module dominance and make density rise and fall.
 7. Use repeated containers only for records with the same semantic schema.
-8. Apply the nearest-source test: if the page still reads as one learned source with different copy, revise the opener, type plan, density curve, media rhythm, or close.
+8. Apply the recognizable-pattern test: if the page still reads as one reference or prior article with different copy, revise the opener, type plan, density curve, media rhythm, or close.
+9. Reject finite theme catalogs, theme selectors, and source-specific component mappings. The article-specific design contract is synthesized directly from the current content.
 
 When style exploration is requested, present a few article-specific directions and compare their typography, composition, image behavior, and density. Never imply that the skill offers a fixed number of styles.
 
-## Learning provenance
+## Knowledge hygiene
 
-The latest normalized source study is `references/superdesign-study-2026-08-20.md`; its accountable record list is `references/superdesign-record-index-2026-08-20.md`. These files document coverage and provenance. Normal article generation uses the merged grammar above rather than selecting a source record.
+This grammar stores only reusable design decisions. Working research remains outside the Skill and is discarded after useful rules are merged through `references/design-learning-workflow.md`.

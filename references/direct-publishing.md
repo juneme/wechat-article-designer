@@ -2,6 +2,8 @@
 
 Use this reference only when article assets or a finished article must pass through the configured console server. The server owns WeChat credentials and WeChat API interaction; this Skill only sends local files and final article data to the server.
 
+Use `references/article-workspaces.md` for the local directory and revision contract. Clipboard delivery is not part of this workflow.
+
 ## Configuration
 
 Read configuration from the process environment:
@@ -54,6 +56,14 @@ The command returns `media_id`. Use the returned value as `thumb_media_id`; a co
 
 ## 3. Build and Validate Article JSON
 
+Synchronize the workspace after the final fragment and metadata changes:
+
+```powershell
+python scripts/article_workspace.py sync '.\articles\日期_标题'
+```
+
+This updates `article.json.content`, regenerates the script-free preview, rotates `request_id` only for changed payload data, and stores a revision snapshot.
+
 Write UTF-8 JSON using this exact contract:
 
 ```json
@@ -79,6 +89,8 @@ python scripts/wechat_console_api.py validate-draft --article '.\article.json'
 ```
 
 Validation enforces the server contract: title up to 32 characters, author up to 16, digest up to 120, content under 20,000 characters and 1 MB, prohibited active HTML, comment flags of `0` or `1`, and HTTPS body images hosted on `mmbiz.qpic.cn`.
+
+SVG components use the same article validation and draft path. Do not create an SVG evidence file or run a separate SVG production audit.
 
 ## 4. Create the Draft
 

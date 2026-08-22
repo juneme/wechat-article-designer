@@ -11,6 +11,7 @@ Browser rendering proves only browser behavior. Local audits detect known hazard
 | Baseline | Inline block flow, solid color, font size/weight/line-height, spacing, borders, moderate radius, fixed or percentage widths within the column, ordinary images | Safe basis for both modes; still inspect mobile widths |
 | Conditional | Compact flex rows, alpha colors, `inline-block`, manual overflow, unusual image crops, `aspect-ratio` | Use only when information remains readable after rewrite; test the exact final copy |
 | Expressive | Gradients, shadows, outlines, transforms, writing-mode, text emphasis, advanced decoration | Creative mode only; provide a solid static fallback and real-editor preview |
+| SVG editorial | Inline SVG and SMIL using the vocabulary in `svg-design-genes.md` | Creative mode; preserve essential meaning in the initial state or surrounding prose and use the standard article checks |
 | Excluded | Scripts, event handlers, external CSS/fonts, hover-only content, CSS Grid, positioned layout, sticky behavior, iframes/embeds, oversized strips, interaction-required information | Do not ship |
 
 Tables are excluded from visual layout. Use a table only when the content is truly tabular and the exact final result has passed editor and phone testing; otherwise use labeled flow rows.
@@ -37,6 +38,8 @@ For every nonessential effect:
 
 Creative mode is not permission for more effects. Use one primary expressive behavior and at most a small number of supporting signals.
 
+Creative mode may use SVG when the component materially supports the article and follows `svg-design-genes.md`. Do not introduce a separate experiment or evidence workflow for the established vocabulary.
+
 ## Fragile patterns
 
 ### Compact flex
@@ -61,6 +64,10 @@ Alpha layers must not be the sole source of contrast. A gradient needs a solid f
 ### Crop and ratio
 
 Reserve a stable frame size so replacement images cannot shift the layout. For manual placeholders, the frame owns height. For hosted images, prefer natural image dimensions unless a tested crop is essential.
+
+### SVG editorial components
+
+Use SVG for one clear editorial job and keep the first frame meaningful. Essential facts, qualifiers, deadlines, contacts, and actions belong in the initial state or surrounding HTML. Follow the construction and motion vocabulary in `svg-design-genes.md`; no separate SVG validation workflow or duplicate fallback wrapper is needed.
 
 ## Release gate
 

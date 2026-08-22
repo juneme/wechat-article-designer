@@ -45,13 +45,16 @@ Not every article needs every role. A reflective essay may be `O-S-M-S-C`; a ser
 
 ## Assembly rules
 
+- Keep ordinary explanation on an open reading surface. A paragraph does not acquire a card, rule, label, or tinted field merely because it is a separate paragraph.
 - Give one module visual dominance. Other modules support it through contrast, spacing, or quieter surfaces.
 - Let density change across the page. Follow a dense fact block with open prose, an image pause, or a clear section break.
+- Encode semantic distance with space: keep the smallest gap within one thought, then increase it for continuation, turn, chapter, and close. Do not apply one repeated gap to every block.
 - Repeat one container only for genuinely comparable records. When content roles change, change the block treatment instead of extending a card stack.
 - Keep cards as individual repeated items, not page-section wrappers. Do not put a decorative card inside another card.
 - Use a stable outer baseline and one intentional inset baseline. Add a third width only when it creates a clear emphasis or caption relationship.
 - Keep one primary reading order. Static WeChat content must not require hover, tab state, drag state, or animation to reveal information.
 - Use visible labels only when they help the reader. Do not expose internal component names or template instructions.
+- Treat about two strong components in one mobile viewport as a review threshold. When strong modules touch, insert a necessary quiet bridge or reduce one module's weight.
 
 ## Translate interactive interface ideas safely
 
@@ -80,7 +83,8 @@ Delete or merge a block that exists only to add decoration. Split a block when i
 
 ## Originality and quality gates
 
-- Compare the new manifest with the nearest learned source. Change at least two meaningful aspects of module sequence, role treatment, or density curve when claiming an original composition.
+- Compare the new manifest with the nearest recognizable pattern or prior article. Change at least two meaningful aspects of module sequence, role treatment, or density curve when claiming an original composition.
+- Reject any workflow that starts from a finite theme list, theme selector, or source-to-output theme mapping; derive the manifest and design contract from the current payload.
 - Confirm that every visible module maps to verified payload or a necessary reader action.
 - Confirm that repeated blocks share one semantic schema; visual similarity alone is not a reason to group unlike content.
 - Confirm that removing decoration preserves hierarchy, labels, reading order, and the action path.
