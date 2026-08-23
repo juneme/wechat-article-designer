@@ -4,6 +4,18 @@ Use this reference only when article assets or a finished article must pass thro
 
 Use `references/article-workspaces.md` for the local directory and revision contract. Clipboard delivery is not part of this workflow.
 
+## Route selection
+
+For an ordinary request to create or substantially redesign an article, resolve delivery before production:
+
+1. Check whether `WECHAT_CONSOLE_URL`, `WECHAT_IMAGE_API_KEY`, and `WECHAT_PUBLISH_API_KEY` are all non-empty without printing their values.
+2. When all three are present, run `python scripts/wechat_console_api.py status`.
+3. Treat direct draft as ready only when the command succeeds, `console_configured`, both key flags, and `server_healthy` are all true.
+4. Use direct draft by default when ready. A user request for preview-only, HTML-only, preparation-only, or stop-before-draft overrides this default.
+5. When configuration is incomplete or status is unhealthy or unreachable, use the local-preview route; do not attempt partial direct delivery.
+
+This route selection is the user's delivery default for this Skill. It authorizes one staged draft after all design and validation gates pass; it never authorizes publication or mass sending.
+
 ## Configuration
 
 Read configuration from the process environment:
@@ -26,43 +38,48 @@ python scripts/wechat_console_api.py status
 
 The command reports whether each local key is configured, but never prints the keys. For a remote HTTP URL, a successful result includes a `warnings` entry instead of blocking the request.
 
-## 1. Upload Body Images
+## 1. Prepare Body Images
 
-Inspect and finalize images before upload. One command accepts at most 20 files and sends each file separately to keep memory use bounded.
+Inspect and finalize images before release. If a required image does not exist, generate it first with an available image capability without fabricating evidence. Store each generated or supplied file under the workspace `assets/` directory and register it in `design-contract.json` with a unique `name`, `placement`, `required`, `source_path`, and state of `generated-local` or `supplied-local`.
 
-```powershell
-python scripts/wechat_console_api.py upload-images --mode article '.\images\lead.jpg' '.\images\detail.png'
+```json
+{
+  "name": "lead-image",
+  "reader_job": "Establish the literal subject before the first section.",
+  "authority": "Illustrative only; not evidence of a real event.",
+  "order": 1,
+  "crop": "natural",
+  "caption": "N/A: the surrounding body supplies the context.",
+  "placement": "body",
+  "required": true,
+  "source_path": "lead.jpg",
+  "state": "generated-local"
+}
 ```
 
-Read each result by `source_path`, not by guessing from upload order. A successful item has `status: "complete"` and an `article_url`. Stop if the command returns a nonzero exit code, `error_count` is nonzero, or an intended item lacks `article_url`.
-
-The client upgrades an `http://mmbiz.qpic.cn/...` article URL returned by WeChat to the same HTTPS host, path, and query before reporting success. Insert the normalized `article_url` into the final article:
+Bind the body position with the same identifier. Before upload, use the controlled placeholder scheme rather than a local filesystem path:
 
 ```html
-<img src="https://mmbiz.qpic.cn/..." alt="" style="display:block;width:100%;height:auto;" />
+<img data-media-id="lead-image" data-media-crop="natural" src="wechat-media://lead-image" alt="" style="display:block;width:100%;height:auto;" />
 ```
 
-Do not use `material_url`, a local path, a temporary URL, or a non-WeChat host for body images. Do not retain a manual 1px image anchor inside a direct-publishing image frame.
+The release command uploads local media, normalizes the returned WeChat article URL to HTTPS, replaces exactly one matching `<img data-media-id>`, and marks the contract asset hosted. It stops the direct route on a missing or duplicate marker. Do not use a local path, temporary URL, or non-WeChat host in the fragment.
 
-## 2. Upload the Cover
+## 2. Prepare the Cover
 
-Generate or finalize the 2.35:1 cover first, then upload the cover as permanent material:
+Generate or finalize the 2.35:1 cover, record `crop: "aspect-ratio:2.35"` and `required: true`, and register it as `placement: "cover"` with its workspace-relative `source_path`. Keep that local source even after upload or when reusing a permanent `thumb_media_id`; direct delivery requires the asset record and reads PNG, JPEG, GIF, or WebP dimensions before any submission. A missing source or ratio mismatch returns the image-generation gate. The cover does not appear in the fragment and therefore has no `data-media-id` marker there.
+
+The release command uploads it as permanent material and writes the returned `media_id` to `article.json.thumb_media_id`. A cover URL is not a valid replacement.
+
+## 3. Build the Article Workspace
+
+Keep the final fragment, metadata, media map, and `PLANNED` contract in one workspace. Do not manually promote the contract to `READY`; the release command generates the exact fragment binding after every audit passes.
 
 ```powershell
-python scripts/wechat_console_api.py upload-cover '.\cover.png'
+python scripts/release_article.py deliver '.\articles\日期_标题'
 ```
 
-The command returns `media_id`. Use the returned value as `thumb_media_id`; a cover URL is not a valid replacement.
-
-## 3. Build and Validate Article JSON
-
-Synchronize the workspace after the final fragment and metadata changes:
-
-```powershell
-python scripts/article_workspace.py sync '.\articles\日期_标题'
-```
-
-This updates `article.json.content`, regenerates the script-free preview, rotates `request_id` only for changed payload data, and stores a revision snapshot.
+This resolves backend health, validates the design contract, audits the local fragment plus title, author, and digest before any upload, uploads prepared local media, audits the exact hosted fragment, updates `article.json.content`, keeps the direct-draft route from generating a local preview, rotates `request_id` only for changed payload data, stores a revision snapshot, and creates one new draft automatically.
 
 Write UTF-8 JSON using this exact contract:
 
@@ -82,7 +99,7 @@ Write UTF-8 JSON using this exact contract:
 
 `request_id` is the idempotency key. Reuse the key only for byte-equivalent article data. Generate a new request ID after any article-data change following an earlier submission.
 
-Validate locally without contacting the draft endpoint:
+The following read-only diagnostic remains available, but it is not a release substitute:
 
 ```powershell
 python scripts/wechat_console_api.py validate-draft --article '.\article.json'
@@ -94,22 +111,30 @@ SVG components use the same article validation and draft path. Do not create an 
 
 ## 4. Create the Draft
 
-`create-draft` is the only mutating command in the direct-publishing workflow. For full direct publishing or delivery to the WeChat draft box, run the command automatically after `validate-draft` succeeds without a second confirmation:
+`release_article.py deliver` is the only mutating entrypoint. It creates a new draft automatically after all gates succeed without a second confirmation. Revisions also create a new draft until the client implements draft updates:
 
 ```powershell
-python scripts/wechat_console_api.py create-draft --article '.\article.json'
+python scripts/release_article.py deliver '.\articles\日期_标题'
 ```
 
-Success returns a draft `media_id`, the `request_id`, a `cached` flag, and server validation counts. A cached response is a successful idempotent replay, not a second draft. Creating a draft does not publish or mass-send the article; final publication remains a separate manual or scan-confirmed action in the WeChat backend.
+Success returns a draft `media_id`, the `request_id`, a `cached` flag, and server validation counts. A cached response is a successful idempotent replay, not a second draft. Creating a draft does not publish or mass-send the article; the user reviews the final draft and decides any later publication action in the WeChat backend.
 
-Do not run `create-draft` for preview-only, HTML-only, image-upload-only, or preparation-only requests. For the full direct-publishing workflow, proceed automatically unless a stop before draft creation is explicitly requested.
+Use `--preview-only` for preview-only requests. Low-level draft creation and image-upload CLI commands are unavailable so contract, audit, synchronization, route, and idempotency gates cannot be bypassed.
 
 ## Failure Handling
 
-- Exit code `0`: operation completed successfully.
-- Exit code `1`: configuration, local validation, transport, HTTP, or response-contract error. A structured error is written to stderr.
-- Exit code `2`: one or more image items failed, or draft creation is still `pending`. The full structured response remains on stdout.
+- Exit code `0`: a draft or permitted local preview was delivered.
+- Exit code `2`: delivery is blocked or a draft result is ambiguous; inspect the structured result and never retry an ambiguous request.
+- Exit code `3`: required image generation must be attempted before delivery may continue.
 
 Check the HTTP status and error message. `401` normally means the corresponding bearer key is missing or wrong, `409` means a request ID was reused for different article data, `422` means the submitted contract is invalid, and `502` or `503` means the server cannot currently complete the WeChat operation.
 
-Never automatically retry `create-draft` after a timeout, `502`, `pending`, or `unknown` result. First inspect the console operation state and the real WeChat draft box because draft creation may have completed before the response was lost. A confirmed `created` response is idempotently cached; an `unknown` result deliberately blocks reuse of the same `request_id`.
+Never automatically retry `create-draft` after a timeout, `502`, `pending`, `unknown`, or any response marked `ambiguous`. Do not generate a fallback preview in this state. The user inspects the real draft box because creation may have completed before the response was lost. A confirmed `created` response is idempotently cached; an `unknown` result deliberately blocks reuse of the same `request_id`.
+
+The release command switches once to local preview when configuration, health, upload, cover preparation, or route-specific draft validation fails before draft creation. A required missing image first returns `image-generation-required` plus an `attempt_id`; after the available image capability actually fails, rerun with both `--image-generation-attempt-id <id>` and `--image-generation-failed "reason"` to permit preview fallback. A definite `401` or `422`, or a `503` carrying `draft_created:false`, creates the preview automatically. Local article audit failures block before material upload. Partially uploaded WeChat materials from upload-specific or hosted-result failures are left for the user to manage. After a draft request becomes ambiguous, the persisted workspace lock reports `do_not_retry` and never switches routes. Resolve it only after inspecting the draft box:
+
+```powershell
+python scripts/article_workspace.py resolve-draft '.\articles\日期_标题' --outcome created
+# or, only after confirming absence:
+python scripts/article_workspace.py resolve-draft '.\articles\日期_标题' --outcome not-created
+```

@@ -15,9 +15,12 @@ Build a private type plan before HTML:
 | Body | 15-16px | 1.85-2.0 | Continuous Chinese reading |
 | Caption / note | 12-13px | 1.6-1.8 | Image context, source, qualifier, or disclaimer |
 | Label / index | 10-12px | 1.4-1.6 | Short navigation, chapter, or data label |
+| Code | 12-14px | 1.6-1.8 | Exact command, code, log, or technical identifier |
 | Data numeral | 28-52px | 1.0-1.2 | One verified number with an adjacent unit and explanation |
 
-These are defaults, not a required scale. Preserve a clear ratio between adjacent roles and test the actual longest text.
+These are hard delivery ranges for the corresponding machine roles. A value outside its role range blocks delivery; choose another supported role when the copy has a different job. Preserve a clear ratio between adjacent roles and test the actual longest text.
+
+Record the actual value used for each present role in `design-contract.json`. Do not leave the plan as a range. Every role object records its font stack, font size, line height, weight, alignment, zero letter spacing, and one machine-parseable wrapping declaration. Put that role name in `data-type-role` on the HTML role root. The generated `design-contract.md` is for reading only. Omit a role only when the final copy does not contain it.
 
 ## Role relationships
 
@@ -29,10 +32,13 @@ These are defaults, not a required scale. Preserve a clear ratio between adjacen
 
 ## Chinese composition
 
-- Keep Chinese letter spacing at `0`. Short Latin uppercase labels may use up to `1px` when the string remains readable.
+- Keep letter spacing at `0` for every machine role, including short Latin labels.
 - Do not use negative tracking. Web samples that depend on tight tracking must be translated through size, weight, and line breaks.
 - Do not justify body copy by default; uneven mobile spacing is harder to read than a natural rag.
 - Avoid manually inserting spaces between Chinese characters.
+- Body paragraphs default to `text-indent:2em`. Apply `text-indent:0` to every non-body role, including titles, leads, lists, quotes, captions, labels, and data rows.
+- A service, notice, promotional, interview, list-heavy, or short-paragraph article may use body `text-indent:0` only when `design-contract.json` records a `body-first-line-indent` exception with the article-specific reason.
+- Never simulate first-line indentation with full-width spaces, nonbreaking spaces, or repeated ordinary spaces. Keep the paragraph gap consistent with the recorded indentation convention.
 - Use deliberate `<br>` only in a short opener or closing after testing the final copy at 320px. Never preserve example line breaks after replacing the title.
 - Keep centered prose to about two short lines. Longer reading copy should align left.
 - Do not use an English eyebrow merely as decoration. A visible label must add category, date, ownership, or orientation.
@@ -74,8 +80,9 @@ Before delivery:
 
 1. Read the article without color. The heading order and argument must remain clear.
 2. Check the longest title, section heading, label, contact string, and URL at 320px.
-3. Confirm body copy is normally 15-16px with at least 1.85 leading.
-4. Confirm labels are meaningful and Chinese tracking is zero.
-5. Confirm no body paragraph is centered, boxed, or tinted solely for decoration.
-6. Confirm repeated items use the same type schema and unlike roles do not.
-7. Confirm the closing is quieter than the opener unless the final action is the article's purpose.
+3. Run `audit_wechat_typography.py` with the READY JSON contract; any role-range or implementation mismatch blocks delivery.
+4. Confirm the implemented first-line indent and paragraph gap match the recorded policy and contain no manual-space indentation.
+5. Confirm labels are meaningful and Chinese tracking is zero.
+6. Confirm no body paragraph is centered, boxed, or tinted solely for decoration.
+7. Confirm repeated items use the same type schema and unlike roles do not.
+8. Confirm the closing is quieter than the opener unless the final action is the article's purpose.

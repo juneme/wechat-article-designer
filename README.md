@@ -24,11 +24,12 @@
 | 阶段 | 产出 |
 |---|---|
 | 理解内容 | 读者、叙事、事实、图片、证据与行动目标的内容地图 |
+| 锁定设计契约 | 逐项确定版式、间距、文字参数、缩进、色彩角色、图像、几何、动效选择与降级方案 |
 | 综合风格 | 从动态设计语法生成本文专属的色彩、构图、媒介节奏与视觉母题 |
-| 组织文字 | 为标题、章节、正文、标签、说明和数据建立中文移动排版层级 |
+| 组织文字 | 为标题、章节、正文、标签、说明和数据建立带实际数值的中文移动排版层级 |
 | 构建文章 | 生成带内联样式的公众号 HTML 片段，并为不稳定效果提供静态降级 |
 | 管理版本 | 每篇文章使用独立工作区，同步片段、预览、草稿 JSON、资产与历史版本 |
-| 校验交付 | 审查受众边界、宽度、字距、对比度与编辑器兼容性，按授权预览或写入草稿 |
+| 校验交付 | 审查受众边界、宽度、字距、对比度与编辑器兼容性；后端就绪时自动写入新草稿，否则生成本地预览 |
 
 设计知识会持续扩展，但不会变成模板选择器。每次创作都必须从当前文章重新建立内容结构与设计契约；历史案例只提供可组合的设计能力。
 
@@ -60,7 +61,7 @@ WECHAT_PUBLISH_API_KEY
 python scripts/wechat_console_api.py status
 ```
 
-完整的图片上传、封面处理、草稿校验和幂等规则见 [`references/direct-publishing.md`](references/direct-publishing.md)。预览、排版和上传图片都不代表授权创建草稿；写入草稿箱也不等于正式群发。
+完整的图片生成、上传、封面处理、草稿校验和幂等规则见 [`references/direct-publishing.md`](references/direct-publishing.md)。三个变量齐全且健康检查成功时，普通的新文章或实质性改版会在终审通过后自动创建新草稿，无需二次确认；写入草稿箱不等于正式群发，最终由用户审阅和决定。
 
 ## 文章工作区
 
@@ -70,13 +71,29 @@ python scripts/wechat_console_api.py status
 python scripts/article_workspace.py create --title '文章标题' --date 'YYYY-MM-DD'
 ```
 
-编辑 `fragment.html` 和 `article.json` 后执行同步：
+若三个 Console 配置完整且状态健康，默认直接交付草稿，建工作区时使用 `--no-preview`；用户明确要求只预览，或后端未配置/不可用时，才使用默认的本地预览路线。
+
+只编辑工作区中的 `design-contract.json`，确认裸文、版式、文字排版、颜色、图像、几何、动效选择和静态降级均已确定，将状态改为 `PLANNED` 并执行计划门：
 
 ```powershell
-python scripts/article_workspace.py sync '.\articles\日期_标题'
+python scripts/article_workspace.py plan '.\articles\日期_标题'
 ```
 
-同步会更新服务端草稿正文、生成无脚本预览、仅在草稿数据变化时轮换幂等 ID，并把已准备状态归档到 `revisions/`。详见 [`references/article-workspaces.md`](references/article-workspaces.md)。预览页不提供剪贴板复制功能。
+随后实现 `fragment.html` 并编辑 `article.json`。不要手工设置 `READY` 或正文摘要；统一发布命令会绑定最终片段、执行全部审查、选择路线并完成草稿或预览交付。`design-contract.md` 是自动生成的内部阅读视图，不应手工编辑：
+
+```powershell
+python scripts/release_article.py deliver '.\articles\日期_标题'
+```
+
+发布命令会拒绝未记录计划、提前实现 HTML、未完成契约、过期正文摘要或任一审查错误；标题、作者、摘要和本地片段先通过终审，才允许上传素材。后端健康时自动创建新草稿，否则只生成无脚本预览。缺少必需图片时会返回 `attempt_id`；真实生成失败后，必须同时提交该 ID 和失败原因才可转为预览。正文、元数据、契约、资产或预览变化都会递增版本，仅草稿载荷变化才轮换幂等 ID。详见 [`references/article-workspaces.md`](references/article-workspaces.md)。
+
+升级旧文章工作区时先运行：
+
+```powershell
+python scripts/article_workspace.py migrate '.\articles\日期_标题'
+```
+
+草稿请求超时或结果未知会持久化锁定工作区。用户检查真实草稿箱后，使用 `resolve-draft --outcome created` 或 `--outcome not-created` 记录唯一结论，再决定是否继续。
 
 ## SVG 互动排版
 
@@ -91,17 +108,21 @@ SVG 是 Creative 模式中的稳定编辑能力。需要揭晓、对比、切换
 ```powershell
 $env:PYTHONUTF8='1'
 python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" .
-python -m compileall -q scripts
-python -m ruff check .
+python -B -c "import ast,pathlib; [ast.parse(p.read_text(encoding='utf-8')) for p in pathlib.Path('scripts').glob('*.py')]"
+python -m ruff check --no-cache .
+python -m unittest discover -s tests -v
+python scripts/audit_release_hygiene.py . --clean
 ```
 
 生成文章后再运行受众边界、移动宽度、中文排版和颜色对比审查：
 
 ```powershell
-python scripts/audit_audience_boundary.py article.html
-python scripts/audit_wechat_widths.py article.html
-python scripts/audit_wechat_typography.py article.html
-python scripts/audit_wechat_contrast.py article.html
+python scripts/audit_wechat_markup.py article.html --contract design-contract.json
+python scripts/audit_audience_boundary.py article.html --contract design-contract.json
+python scripts/audit_wechat_widths.py article.html --contract design-contract.json
+python scripts/audit_wechat_typography.py article.html --contract design-contract.json
+python scripts/audit_wechat_contrast.py article.html --contract design-contract.json
+python scripts/audit_design_contract.py article.html --contract design-contract.json
 ```
 
 浏览器预览不能替代微信公众号编辑器与手机预览。仓库不携带固定文章 HTML、研究过程数据、本地文章数据或真实公众号凭据。

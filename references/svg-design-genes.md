@@ -46,7 +46,7 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 ## Color and typography
 
 - Use two to four solid colors with sufficient text contrast; color cannot be the only state cue.
-- Use direct `text` elements with explicit `x`, `y`, `fill`, `font-size`, and optional `font-weight`.
+- Use direct `text` elements with explicit `x`, `y`, and `fill`. Put a supported `data-type-role` and its contract-matching inline typography on every visible SVG text root; accessibility-only `title` and `desc` do not need a type role.
 - Avoid `textPath`, filters, gradients, and font-dependent visual tricks.
 - Keep long Chinese copy in ordinary HTML so editor font substitution or fixed SVG coordinates cannot damage reading.
 

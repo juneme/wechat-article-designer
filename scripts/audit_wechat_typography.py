@@ -1,32 +1,57 @@
 #!/usr/bin/env python3
-"""Audit inline typography in the WeChat copy boundary."""
+"""Validate implemented article typography against design-contract.json."""
 
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import sys
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import Any
+
+try:
+    from .design_contract import ContractError, load_contract, validate_contract
+except ImportError:
+    from design_contract import (  # type: ignore[no-redef]
+        ContractError,
+        load_contract,
+        validate_contract,
+    )
 
 START = "<!-- 微信公众号复制开始 -->"
 END = "<!-- 微信公众号复制结束 -->"
-TITLE_HINTS = re.compile(r"(?:TITLE|HEADING|MASTHEAD|HERO_ACTION)")
-DATA_HINTS = re.compile(r"(?:NUMBER|COUNT|SALARY|ORDER)")
-CJK = re.compile(r"[\u3400-\u9fff]")
-PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
-VOID_TAGS = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
-
-
-def is_body_token(token: str) -> bool:
-    return (
-        token in {"BODY", "INTRO", "DECK", "PARAGRAPH", "ACTION_METHOD"}
-        or token.startswith("BODY_")
-        or token.endswith("_BODY")
-        or "COPY_LINE" in token
-        or bool(re.fullmatch(r"REQUIREMENT(?:_\d+)?", token))
-        or bool(re.fullmatch(r"BENEFIT_\d+_DESC", token))
-    )
+VOID_TAGS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
+INHERITED_PROPERTIES = {
+    "font-family",
+    "font-size",
+    "font-style",
+    "font-weight",
+    "letter-spacing",
+    "line-height",
+    "overflow-wrap",
+    "text-align",
+    "text-indent",
+    "text-transform",
+    "white-space",
+    "word-break",
+}
 
 
 def parse_style(raw: str) -> dict[str, str]:
@@ -34,138 +59,334 @@ def parse_style(raw: str) -> dict[str, str]:
     for declaration in raw.split(";"):
         if ":" not in declaration:
             continue
-        key, value = declaration.split(":", 1)
-        result[key.strip().lower()] = value.strip()
+        name, value = declaration.split(":", 1)
+        result[name.strip().lower()] = re.sub(
+            r"\s*!important\s*$", "", value, flags=re.IGNORECASE
+        ).strip()
     return result
 
 
-def px(value: str | None) -> float | None:
+def _number_unit(value: str | None, unit: str) -> float | None:
     if not value:
         return None
-    match = re.fullmatch(r"(-?\d+(?:\.\d+)?)px", value.strip())
+    match = re.fullmatch(rf"(-?\d+(?:\.\d+)?){re.escape(unit)}", value.strip())
     return float(match.group(1)) if match else None
 
 
-def leading(value: str | None, font_size: float | None) -> float | None:
+def _line_height(value: str | None, font_size: float | None) -> float | None:
     if not value:
         return None
-    value = value.strip()
-    if re.fullmatch(r"\d+(?:\.\d+)?", value):
-        return float(value)
-    line_px = px(value)
-    if line_px is not None and font_size:
-        return line_px / font_size
+    normalized = value.strip()
+    if re.fullmatch(r"\d+(?:\.\d+)?", normalized):
+        return float(normalized)
+    pixels = _number_unit(normalized, "px")
+    return pixels / font_size if pixels is not None and font_size else None
+
+
+def _font_weight(value: str | None) -> int | None:
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    if normalized == "normal":
+        return 400
+    if normalized in {"bold", "bolder"}:
+        return 700
+    if re.fullmatch(r"[1-9]00", normalized):
+        return int(normalized)
     return None
+
+
+def _font_stack(value: str | None) -> list[str] | None:
+    if not value:
+        return None
+    return [
+        part.strip().strip("\"'").casefold()
+        for part in value.split(",")
+        if part.strip()
+    ]
+
+
+def _zero_px(value: str | None) -> bool:
+    if value is None:
+        return False
+    return bool(re.fullmatch(r"(?:0+(?:\.0+)?|0+(?:\.0+)?px)", value.strip()))
+
+
+def _indent_em(value: str | None, font_size: float | None) -> float | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if re.fullmatch(r"0+(?:\.0+)?(?:em|px)?", normalized):
+        return 0.0
+    ems = _number_unit(normalized, "em")
+    if ems is not None:
+        return ems
+    pixels = _number_unit(normalized, "px")
+    return pixels / font_size if pixels is not None and font_size else None
+
+
+class _Node:
+    def __init__(
+        self,
+        *,
+        tag: str,
+        line: int,
+        style: dict[str, str],
+        role: str | None,
+        explicit_role: str | None,
+    ) -> None:
+        self.tag = tag
+        self.line = line
+        self.style = style
+        self.role = role
+        self.explicit_role = explicit_role
+        self.text: list[str] = []
 
 
 class TypographyParser(HTMLParser):
     def __init__(self, line_offset: int = 0) -> None:
         super().__init__(convert_charrefs=True)
         self.line_offset = line_offset
-        self.stack: list[dict[str, object]] = []
-        self.nodes: list[dict[str, object]] = []
+        self.stack: list[_Node] = []
+        self.nodes: list[_Node] = []
+        self.missing_role_lines: set[int] = set()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "br":
-            for node in self.stack:
-                node["br"] = int(node["br"]) + 1
-            return
-        if tag in VOID_TAGS:
-            return
-        attr_map = dict(attrs)
-        node = {
-            "tag": tag,
-            "style": parse_style(attr_map.get("style") or ""),
-            "text": [],
-            "line": self.getpos()[0] + self.line_offset,
-            "br": 0,
-        }
-        self.stack.append(node)
-        if tag in {"p", "span"}:
-            self.nodes.append(node)
+        attributes = dict(attrs)
+        inherited_style = (
+            {
+                name: value
+                for name, value in self.stack[-1].style.items()
+                if name in INHERITED_PROPERTIES
+            }
+            if self.stack
+            else {}
+        )
+        inherited_style.update(parse_style(attributes.get("style") or ""))
+        explicit_role = attributes.get("data-type-role")
+        role = explicit_role or (self.stack[-1].role if self.stack else None)
+        node = _Node(
+            tag=tag,
+            line=self.getpos()[0] + self.line_offset,
+            style=inherited_style,
+            role=role,
+            explicit_role=explicit_role,
+        )
+        self.nodes.append(node)
+        if tag not in VOID_TAGS:
+            self.stack.append(node)
 
-    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "br":
-            for node in self.stack:
-                node["br"] = int(node["br"]) + 1
+    def handle_startendtag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag not in VOID_TAGS:
+            self.handle_endtag(tag)
 
     def handle_endtag(self, tag: str) -> None:
         for index in range(len(self.stack) - 1, -1, -1):
-            if self.stack[index]["tag"] == tag:
+            if self.stack[index].tag == tag:
                 del self.stack[index:]
                 break
 
     def handle_data(self, data: str) -> None:
+        if any(node.tag in {"defs", "desc", "title"} for node in self.stack):
+            return
         for node in self.stack:
-            node["text"].append(data)
+            node.text.append(data)
+        if data.strip() and (not self.stack or self.stack[-1].role is None):
+            self.missing_role_lines.add(self.getpos()[0] + self.line_offset)
 
 
-def audit(path: Path) -> dict[str, object]:
+def _article_html(path: Path) -> tuple[str, int]:
     raw = path.read_text(encoding="utf-8")
-    if START not in raw or END not in raw:
-        return {
-            "ok": False,
-            "article": path.name,
-            "finding_count": 1,
-            "findings": [{"code": "copy-boundary", "line": 1, "message": "Missing WeChat copy boundary."}],
-        }
+    if path.suffix.lower() == ".json":
+        payload: Any = json.loads(raw)
+        if not isinstance(payload, dict) or not isinstance(payload.get("content"), str):
+            raise ValueError("article JSON must contain a string content field")
+        return payload["content"], 0
+    if raw.count(START) != 1 or raw.count(END) != 1 or raw.index(START) > raw.index(END):
+        raise ValueError("HTML must contain exactly one ordered WeChat boundary pair")
+    prefix, remainder = raw.split(START, 1)
+    fragment = remainder.split(END, 1)[0]
+    return fragment, prefix.count("\n")
 
-    prefix, fragment_and_end = raw.split(START, 1)
-    fragment = fragment_and_end.split(END, 1)[0]
-    parser = TypographyParser(line_offset=prefix.count("\n"))
-    parser.feed(fragment)
+
+def _add(
+    findings: list[dict[str, object]],
+    code: str,
+    line: int,
+    message: str,
+) -> None:
+    findings.append(
+        {"code": code, "severity": "error", "line": line, "message": message}
+    )
+
+
+def audit_html(
+    value: str,
+    contract: dict[str, Any],
+    *,
+    line_offset: int = 0,
+) -> list[dict[str, object]]:
+    parser = TypographyParser(line_offset=line_offset)
+    parser.feed(value)
+    parser.close()
     findings: list[dict[str, object]] = []
+    typography = contract["typography"]
+    roles: dict[str, Any] = typography["roles"]
 
-    def add(code: str, node: dict[str, object], message: str) -> None:
-        findings.append({"code": code, "line": node["line"], "message": message})
+    for line in sorted(parser.missing_role_lines):
+        _add(
+            findings,
+            "missing-type-role",
+            line,
+            "Visible text must inherit a supported data-type-role.",
+        )
 
     for node in parser.nodes:
-        style = node["style"]
-        text = re.sub(r"\s+", " ", "".join(node["text"])).strip()
-        if not text or text == "&nbsp;":
+        if node.explicit_role is None:
             continue
-        size = px(style.get("font-size"))
-        line_height = leading(style.get("line-height"), size)
-        spacing = px(style.get("letter-spacing"))
-        tokens = PLACEHOLDER.findall(text)
-        literal_text = PLACEHOLDER.sub("", text).strip()
-        is_body = any(is_body_token(token) for token in tokens) or (
-            len(literal_text) >= 42 and (size or 15) <= 18
+        visible = "".join(node.text)
+        if not visible.strip():
+            continue
+        role = node.explicit_role
+        if role not in roles:
+            _add(
+                findings,
+                "unknown-type-role",
+                node.line,
+                f"data-type-role={role!r} is absent from the design contract.",
+            )
+            continue
+        planned = roles[role]
+        style = node.style
+        actual_size = _number_unit(style.get("font-size"), "px")
+        planned_size = float(planned["font_size_px"])
+        if actual_size is None or abs(actual_size - planned_size) > 0.01:
+            _add(
+                findings,
+                "font-size-contract-mismatch",
+                node.line,
+                f"Role {role} requires {planned_size:g}px; found {style.get('font-size')!r}.",
+            )
+
+        actual_leading = _line_height(style.get("line-height"), actual_size)
+        planned_leading = float(planned["line_height"])
+        if actual_leading is None or abs(actual_leading - planned_leading) > 0.01:
+            _add(
+                findings,
+                "line-height-contract-mismatch",
+                node.line,
+                f"Role {role} requires {planned_leading:g}; found {style.get('line-height')!r}.",
+            )
+
+        actual_weight = _font_weight(style.get("font-weight"))
+        if actual_weight != planned["font_weight"]:
+            _add(
+                findings,
+                "font-weight-contract-mismatch",
+                node.line,
+                f"Role {role} requires weight {planned['font_weight']}; found {style.get('font-weight')!r}.",
+            )
+
+        if (style.get("text-align") or "").lower() != planned["alignment"]:
+            _add(
+                findings,
+                "alignment-contract-mismatch",
+                node.line,
+                f"Role {role} requires {planned['alignment']} alignment; found {style.get('text-align')!r}.",
+            )
+
+        if not _zero_px(style.get("letter-spacing")):
+            _add(
+                findings,
+                "letter-spacing-contract-mismatch",
+                node.line,
+                f"Role {role} requires zero letter spacing; found {style.get('letter-spacing')!r}.",
+            )
+
+        planned_stack = [str(item).casefold() for item in planned["font_stack"]]
+        if _font_stack(style.get("font-family")) != planned_stack:
+            _add(
+                findings,
+                "font-stack-contract-mismatch",
+                node.line,
+                f"Role {role} font-family does not match its contract font_stack.",
+            )
+
+        wrap = str(planned["wrap"])
+        property_name, expected = wrap.split(":", 1)
+        if style.get(property_name.strip().lower(), "").lower() != expected.strip().lower():
+            _add(
+                findings,
+                "wrap-contract-mismatch",
+                node.line,
+                f"Role {role} requires {wrap}; implementation differs.",
+            )
+
+        expected_indent = (
+            float(typography["body_first_line_indent_em"]) if role == "body" else 0.0
         )
-        is_title = bool(TITLE_HINTS.search(text)) and not DATA_HINTS.search(text)
-        is_data = bool(DATA_HINTS.search(text))
+        actual_indent = _indent_em(style.get("text-indent"), actual_size)
+        if actual_indent is None or abs(actual_indent - expected_indent) > 0.01:
+            _add(
+                findings,
+                "first-line-indent-contract-mismatch",
+                node.line,
+                f"Role {role} requires text-indent:{expected_indent:g}em; found {style.get('text-indent')!r}.",
+            )
 
-        if is_body and size is not None and size < 14:
-            add("body-font-size", node, f"Body-like text is {size:g}px; use 14px only for compact facts and normally 15-16px.")
-        if is_body and line_height is not None and line_height < 1.75:
-            add("body-line-height", node, f"Body-like leading is {line_height:.2f}; use at least 1.75 and normally 1.85-2.0.")
-        if size is not None and size >= 28 and not is_data and line_height is not None and line_height < 1.15:
-            add("display-line-height", node, f"Display leading is {line_height:.2f}; multi-line mobile titles need at least 1.15.")
-        if is_title and size is not None and size >= 30:
-            if "word-break" not in style and "overflow-wrap" not in style:
-                add("title-wrap", node, "Large title lacks word-break or overflow-wrap protection for long Latin text.")
-        if spacing is not None and spacing != 0 and CJK.search(text):
-            add("cjk-letter-spacing", node, "Chinese text must use zero letter spacing.")
-        if spacing is not None and spacing > 1 and "{{" in text and not re.search(r"(?:_EN|LABEL|EYEBROW|PUBLICATION_LINE)", text):
-            add("placeholder-letter-spacing", node, "Content placeholder may become Chinese text but uses letter spacing above 1px.")
-        if style.get("text-align") == "center" and (is_body or len(text) > 48):
-            add("centered-prose", node, "Long prose is centered; mobile reading copy should normally align left.")
+        leading_ascii = bool(re.match(r" {2,}", visible)) and not visible.startswith(
+            ("\r", "\n", "\t")
+        )
+        leading_content = visible.lstrip(" \t\r\n")
+        if leading_ascii or leading_content.startswith(("\u3000", "\u00a0")):
+            _add(
+                findings,
+                "manual-space-indentation",
+                node.line,
+                "Use CSS text-indent; do not simulate indentation with spaces or NBSP.",
+            )
 
+    return findings
+
+
+def audit(path: Path, contract_path: Path) -> dict[str, object]:
+    contract = load_contract(contract_path)
+    validate_contract(contract, required_status="READY")
+    value, line_offset = _article_html(path)
+    findings = audit_html(value, contract, line_offset=line_offset)
     return {
         "ok": not findings,
         "article": path.name,
-        "finding_count": len(findings),
+        "contract": contract_path.name,
+        "error_count": len(findings),
+        "warning_count": 0,
         "findings": findings,
     }
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Audit mobile WeChat typography")
-    parser.add_argument("article", type=Path, help="WeChat HTML article fragment")
-    args = parser.parse_args()
-    result = audit(args.article)
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Validate WeChat typography against design-contract.json"
+    )
+    parser.add_argument("article", type=Path, help="HTML fragment or article JSON")
+    parser.add_argument("--contract", type=Path, required=True)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _build_parser().parse_args(argv)
+    try:
+        if not args.article.is_file():
+            raise ValueError(f"article file does not exist: {args.article}")
+        result = audit(args.article, args.contract)
+    except (OSError, UnicodeError, json.JSONDecodeError, ContractError, ValueError) as exc:
+        print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 1
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    return 0 if result["ok"] else 1
+    return 0 if result["ok"] else 2
 
 
 if __name__ == "__main__":

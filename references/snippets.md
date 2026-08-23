@@ -1,30 +1,42 @@
 # Core Inline Primitives
 
-Use only the blocks required by the article's module manifest. Replace every bracketed field with final copy, adapt colors and spacing to the article's design contract, and keep Chinese letter spacing at `0`.
+Use only the blocks required by the article's module manifest. Replace every bracketed field with final copy, adapt colors and spacing to `design-contract.json`, and register every used `data-type-role` there. The values below are range-valid examples, not a second source of truth; the final HTML must match the contract exactly.
 
 ## Publishable boundary
 
 ```html
 <!-- 微信公众号复制开始 -->
-<section style="margin:0;padding:0;background:#FFFFFF;color:#202020;">
-  <!-- final audience-facing article -->
+<section data-module-id="opening" data-density="open" data-layout-role="outer-baseline" style="margin:0;padding:0 8px;background:#FFFFFF;color:#202020;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif;font-weight:400;text-align:left;letter-spacing:0;overflow-wrap:anywhere;text-indent:0;">
+  <section data-layout-role="content-inset" style="margin:0;padding:0 18px;">
+    <!-- final audience-facing article -->
+  </section>
 </section>
 <!-- 微信公众号复制结束 -->
 ```
 
 Only content inside the boundary is synchronized into the server draft payload. The comments are parser markers, not a clipboard feature. Asset maps, replacement instructions, design notes, and validation results stay outside.
 
+## Body paragraph
+
+Use the contract's body values exactly. The default indent is two Chinese characters; a zero-indent article requires the recorded exception described in `typography-system.md`.
+
+```html
+<p data-type-role="body" data-spacing-role="paragraph-gap" style="margin:0 18px 10px;padding:0;color:#202020;font-size:16px;line-height:1.9;font-weight:400;letter-spacing:0;text-align:left;text-indent:2em;overflow-wrap:anywhere;">
+  [Audience-facing body paragraph]
+</p>
+```
+
 ## Editable image placeholder
 
 Use during preview preparation before the final image is uploaded through the console server. The frame owns its height and styling. Keep exactly one direct-child 1px paragraph so the editor exposes a caret when manual inspection is necessary.
 
 ```html
-<section style="height:220px;margin:24px 8px 0;padding:0;background:#F2F2F0;border:1px solid #D8D8D4;overflow:hidden;">
+<section data-media-id="lead-image" data-media-crop="object-fit:cover:1.5" style="height:220px;margin:24px 8px 0;padding:0;background:#F2F2F0;border:1px solid #D8D8D4;overflow:hidden;">
   <p style="margin:0;padding:0;font-size:1px;line-height:1px;letter-spacing:0;">&nbsp;</p>
 </section>
 ```
 
-Provide the intended filename and crop outside the copy boundary. Do not put replacement instructions, filenames, local paths, nested labels, or decorative children inside the frame.
+Match `data-media-id` and `data-media-crop` to the contract asset. Crop values are `natural`, `prepared`, `aspect-ratio:<ratio>`, or `object-fit:<cover|contain>:<ratio>`. Provide the intended filename outside the copy boundary. Do not put replacement instructions, filenames, local paths, nested labels, or decorative children inside the frame. After generation succeeds, replace this frame with the hosted-image shape using the same identifier, crop value, and a temporary `wechat-media://<id>` source; the release command uploads and replaces that source.
 
 ## Hosted image
 
@@ -32,7 +44,7 @@ Use only after the final body image has been uploaded to an approved HTTPS host.
 
 ```html
 <section style="margin:24px 8px 0;padding:0;">
-  <img src="https://mmbiz.qpic.cn/FINAL_ARTICLE_IMAGE" alt="[concise image description]" style="display:block;width:100%;height:auto;margin:0;border:0;" />
+  <img data-media-id="lead-image" data-media-crop="natural" src="https://mmbiz.qpic.cn/FINAL_ARTICLE_IMAGE" alt="[concise image description]" style="display:block;width:100%;height:auto;margin:0;border:0;" />
 </section>
 ```
 
@@ -41,7 +53,7 @@ Do not ship the example URL. Avoid forced cropping unless the exact image and ph
 ## Caption
 
 ```html
-<p style="margin:8px 8px 0;padding:0;color:#6A6A66;font-size:12px;line-height:1.7;letter-spacing:0;text-align:left;">
+<p data-caption-for="lead-image" data-type-role="caption" style="margin:8px 8px 0;padding:0;color:#6A6A66;font-size:12px;line-height:1.7;font-weight:400;letter-spacing:0;text-align:left;text-indent:0;">
   [What the image shows, when needed · source or qualifier]
 </p>
 ```
@@ -52,10 +64,10 @@ A caption adds context, source, time, identity, or a limitation. Remove it when 
 
 ```html
 <section style="margin:42px 18px 0;padding:0 0 10px;border-bottom:2px solid #202020;">
-  <p style="margin:0;color:#76766F;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;">
+  <p data-type-role="label" style="margin:0;color:#76766F;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">
     [Meaningful index, date, or category]
   </p>
-  <p style="margin:6px 0 0;padding:0;color:#202020;font-size:24px;line-height:1.45;font-weight:700;letter-spacing:0;">
+  <p data-type-role="section" style="margin:6px 0 0;padding:0;color:#202020;font-size:24px;line-height:1.45;font-weight:700;letter-spacing:0;text-indent:0;">
     [Literal section heading]
   </p>
 </section>
@@ -70,14 +82,14 @@ Use repeated rows only for facts that share one schema.
 ```html
 <section style="margin:24px 18px 0;padding:0;border-top:1px solid #CFCFCA;">
   <section style="margin:0;padding:16px 0;border-bottom:1px solid #CFCFCA;">
-    <p style="margin:0;color:#6A6A66;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;">[LABEL]</p>
-    <p style="margin:5px 0 0;color:#202020;font-size:17px;line-height:1.6;font-weight:700;letter-spacing:0;">[Verified fact]</p>
-    <p style="margin:5px 0 0;color:#50504C;font-size:14px;line-height:1.8;letter-spacing:0;">[Qualifier, unit, source, or explanation]</p>
+    <p data-type-role="label" style="margin:0;color:#6A6A66;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">[LABEL]</p>
+    <p data-type-role="item" style="margin:5px 0 0;color:#202020;font-size:17px;line-height:1.6;font-weight:700;letter-spacing:0;text-indent:0;">[Verified fact]</p>
+    <p data-type-role="caption" style="margin:5px 0 0;color:#50504C;font-size:13px;line-height:1.75;font-weight:400;letter-spacing:0;text-indent:0;">[Qualifier, unit, source, or explanation]</p>
   </section>
   <section style="margin:0;padding:16px 0;border-bottom:1px solid #CFCFCA;">
-    <p style="margin:0;color:#6A6A66;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;">[LABEL]</p>
-    <p style="margin:5px 0 0;color:#202020;font-size:17px;line-height:1.6;font-weight:700;letter-spacing:0;">[Verified fact]</p>
-    <p style="margin:5px 0 0;color:#50504C;font-size:14px;line-height:1.8;letter-spacing:0;">[Qualifier, unit, source, or explanation]</p>
+    <p data-type-role="label" style="margin:0;color:#6A6A66;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">[LABEL]</p>
+    <p data-type-role="item" style="margin:5px 0 0;color:#202020;font-size:17px;line-height:1.6;font-weight:700;letter-spacing:0;text-indent:0;">[Verified fact]</p>
+    <p data-type-role="caption" style="margin:5px 0 0;color:#50504C;font-size:13px;line-height:1.75;font-weight:400;letter-spacing:0;text-indent:0;">[Qualifier, unit, source, or explanation]</p>
   </section>
 </section>
 ```
@@ -90,9 +102,9 @@ Use one clear action path. Do not manufacture urgency.
 
 ```html
 <section style="margin:40px 8px 0;padding:24px 18px;background:#202020;color:#FFFFFF;">
-  <p style="margin:0;color:#CFCFCA;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;">[ACTION LABEL]</p>
-  <p style="margin:7px 0 0;padding:0;color:#FFFFFF;font-size:22px;line-height:1.45;font-weight:700;letter-spacing:0;">[What the reader should do]</p>
-  <p style="margin:12px 0 0;color:#F2F2F0;font-size:15px;line-height:1.85;letter-spacing:0;">[Method, deadline, eligibility, contact path, or next step]</p>
+  <p data-type-role="label" style="margin:0;color:#CFCFCA;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">[ACTION LABEL]</p>
+  <p data-type-role="section" style="margin:7px 0 0;padding:0;color:#FFFFFF;font-size:22px;line-height:1.45;font-weight:700;letter-spacing:0;text-indent:0;">[What the reader should do]</p>
+  <p data-type-role="deck" style="margin:12px 0 0;color:#F2F2F0;font-size:15px;line-height:1.85;font-weight:400;letter-spacing:0;text-indent:0;">[Method, deadline, eligibility, contact path, or next step]</p>
 </section>
 ```
 
@@ -102,7 +114,7 @@ If there is no requested reader action, use a quiet closing rather than an artif
 
 ```html
 <section style="margin:24px 18px 0;padding:14px 0 0;border-top:1px solid #D8D8D4;">
-  <p style="margin:0;color:#6A6A66;font-size:12px;line-height:1.75;letter-spacing:0;">
+  <p data-type-role="caption" style="margin:0;color:#6A6A66;font-size:12px;line-height:1.75;font-weight:400;letter-spacing:0;text-indent:0;">
     [Necessary scope, source, eligibility, medical/legal qualifier, update time, or final-authority statement]
   </p>
 </section>
@@ -116,13 +128,13 @@ Use only for real commands, code, logs, or technical identifiers. Do not set nar
 
 ```html
 <section style="margin:24px 8px 0;padding:0;background:#202020;border:1px solid #3A3A38;border-radius:6px;overflow:hidden;">
-  <p style="margin:0;padding:10px 14px;background:#2A2A28;color:#D8D8D4;font-size:12px;line-height:1.5;letter-spacing:0;">
+  <p data-type-role="label" style="margin:0;padding:10px 14px;background:#2A2A28;color:#D8D8D4;font-size:12px;line-height:1.5;font-weight:400;letter-spacing:0;text-indent:0;">
     <span style="color:#FF6B5E;">●</span>
     <span style="color:#F0C84B;">●</span>
     <span style="color:#67C587;">●</span>
     <span style="color:#A8A8A2;"> [Meaningful filename or environment]</span>
   </p>
-  <p style="margin:0;padding:16px 14px;color:#F2F2F0;font-size:13px;line-height:1.75;letter-spacing:0;font-family:Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;">[Exact command or code]</p>
+  <p data-type-role="code" style="margin:0;padding:16px 14px;color:#F2F2F0;font-size:13px;line-height:1.75;font-weight:400;letter-spacing:0;text-indent:0;font-family:Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;">[Exact command or code]</p>
 </section>
 ```
 
@@ -133,14 +145,14 @@ Keep commands exact and keep explanations outside the code surface. The colored 
 Preserve speaker identity and reading order in ordinary flow. Color may distinguish speakers but cannot be the only identity signal.
 
 ```html
-<section style="margin:24px 8px 0;padding:0;">
+<section data-content-kind="dialogue" style="margin:24px 8px 0;padding:0;">
   <section style="margin:0;padding:0 0 0 14px;border-left:3px solid #3155F5;">
-    <p style="margin:0;color:#3155F5;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">采访者 · [姓名或角色]</p>
-    <p style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;letter-spacing:0;">[问题]</p>
+    <p data-type-role="label" style="margin:0;color:#3155F5;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">采访者 · [姓名或角色]</p>
+    <p data-type-role="body" style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;font-weight:400;letter-spacing:0;text-indent:2em;">[问题]</p>
   </section>
   <section style="margin:18px 0 0;padding:0 0 0 14px;border-left:3px solid #67A57B;">
-    <p style="margin:0;color:#477A57;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">受访者 · [姓名或角色]</p>
-    <p style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;letter-spacing:0;">[回答]</p>
+    <p data-type-role="label" style="margin:0;color:#477A57;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">受访者 · [姓名或角色]</p>
+    <p data-type-role="body" style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;font-weight:400;letter-spacing:0;text-indent:2em;">[回答]</p>
   </section>
 </section>
 ```
@@ -154,14 +166,14 @@ Use repeated single-column rows. Each row owns its line, so editor rewriting can
 ```html
 <section style="margin:24px 8px 0;padding:0;">
   <section style="margin:0;padding:0 0 20px 16px;border-left:2px solid #202020;">
-    <p style="margin:0;color:#6A6A66;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">[DATE OR VERSION]</p>
-    <p style="margin:6px 0 0;color:#202020;font-size:18px;line-height:1.55;font-weight:700;letter-spacing:0;">[Milestone]</p>
-    <p style="margin:7px 0 0;color:#50504C;font-size:14px;line-height:1.8;letter-spacing:0;">[Verified outcome, scope, or qualifier]</p>
+    <p data-type-role="label" style="margin:0;color:#6A6A66;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">[DATE OR VERSION]</p>
+    <p data-type-role="item" style="margin:6px 0 0;color:#202020;font-size:18px;line-height:1.55;font-weight:700;letter-spacing:0;text-indent:0;">[Milestone]</p>
+    <p data-type-role="caption" style="margin:7px 0 0;color:#50504C;font-size:13px;line-height:1.75;font-weight:400;letter-spacing:0;text-indent:0;">[Verified outcome, scope, or qualifier]</p>
   </section>
   <section style="margin:0;padding:0 0 0 16px;border-left:2px solid #CFCFCA;">
-    <p style="margin:0;color:#6A6A66;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;">[DATE OR VERSION]</p>
-    <p style="margin:6px 0 0;color:#202020;font-size:18px;line-height:1.55;font-weight:700;letter-spacing:0;">[Milestone]</p>
-    <p style="margin:7px 0 0;color:#50504C;font-size:14px;line-height:1.8;letter-spacing:0;">[Verified outcome, scope, or qualifier]</p>
+    <p data-type-role="label" style="margin:0;color:#6A6A66;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">[DATE OR VERSION]</p>
+    <p data-type-role="item" style="margin:6px 0 0;color:#202020;font-size:18px;line-height:1.55;font-weight:700;letter-spacing:0;text-indent:0;">[Milestone]</p>
+    <p data-type-role="caption" style="margin:7px 0 0;color:#50504C;font-size:13px;line-height:1.75;font-weight:400;letter-spacing:0;text-indent:0;">[Verified outcome, scope, or qualifier]</p>
   </section>
 </section>
 ```
@@ -174,13 +186,13 @@ Keep the numeric value visible as text. Set the inner bar width to the same veri
 
 ```html
 <section style="margin:24px 8px 0;padding:0;">
-  <p style="margin:0;color:#202020;font-size:15px;line-height:1.6;font-weight:700;letter-spacing:0;">[Metric] · 68%</p>
+  <p data-type-role="item" style="margin:0;color:#202020;font-size:17px;line-height:1.6;font-weight:700;letter-spacing:0;text-indent:0;">[Metric] · 68%</p>
   <section style="height:8px;margin:9px 0 0;padding:0;background:#E5E5E1;overflow:hidden;">
     <section style="width:68%;height:8px;margin:0;padding:0;background:#3155F5;">
       <p style="margin:0;padding:0;font-size:1px;line-height:1px;letter-spacing:0;">&nbsp;</p>
     </section>
   </section>
-  <p style="margin:7px 0 0;color:#6A6A66;font-size:12px;line-height:1.7;letter-spacing:0;">[Unit, sample, date, source, or interpretation boundary]</p>
+  <p data-type-role="caption" style="margin:7px 0 0;color:#6A6A66;font-size:12px;line-height:1.7;font-weight:400;letter-spacing:0;text-indent:0;">[Unit, sample, date, source, or interpretation boundary]</p>
 </section>
 ```
 
@@ -190,9 +202,9 @@ Use only when the scale and scoring method are meaningful. A rating without a de
 
 ```html
 <section style="margin:24px 8px 0;padding:16px 0;border-top:1px solid #CFCFCA;border-bottom:1px solid #CFCFCA;">
-  <p style="margin:0;color:#6A6A66;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;">[RATING LABEL]</p>
-  <p style="margin:6px 0 0;color:#202020;font-size:28px;line-height:1.35;font-weight:700;letter-spacing:0;">8.6 <span style="color:#76766F;font-size:14px;font-weight:400;">/ 10</span></p>
-  <p style="margin:7px 0 0;color:#50504C;font-size:13px;line-height:1.75;letter-spacing:0;">[Scoring method, sample, source, and date]</p>
+  <p data-type-role="label" style="margin:0;color:#6A6A66;font-size:11px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">[RATING LABEL]</p>
+  <p data-type-role="data" style="margin:6px 0 0;color:#202020;font-size:28px;line-height:1.1;font-weight:700;letter-spacing:0;text-indent:0;">8.6 <span data-type-role="caption" style="color:#76766F;font-size:13px;line-height:1.7;font-weight:400;letter-spacing:0;text-indent:0;">/ 10</span></p>
+  <p data-type-role="caption" style="margin:7px 0 0;color:#50504C;font-size:13px;line-height:1.75;font-weight:400;letter-spacing:0;text-indent:0;">[Scoring method, sample, source, and date]</p>
 </section>
 ```
 
@@ -206,11 +218,18 @@ Use only when the scale and scoring method are meaningful. A rating without a de
 
 ### Structure and typography
 
+- The canonical `design-contract.json` is machine-valid and `READY`, contains no unresolved placeholder, and matches the final structure, typography, palette, media, geometry, effects, and delivery route; `design-contract.md` has been regenerated, not edited.
 - The opener names the literal topic; the close resolves ownership or action.
 - One module is dominant, density changes deliberately, and unrelated content is not forced into equal cards.
 - Body copy is normally 15-16px with at least 1.85 leading.
-- Chinese letter spacing is `0`; long labels, URLs, and identifiers wrap at 320px.
+- Chinese letter spacing is `0`; first-line indentation and paragraph gaps follow one recorded policy without manual-space indentation; long labels, URLs, and identifiers wrap at 320px.
 - Centered prose is short; captions and disclaimers remain readable.
+
+### Color and effects
+
+- Every color maps to a recorded field, ink, signal, correction, or image-support role; hierarchy remains understandable without accent color.
+- The final fragment follows the recorded `none`, static expressive CSS, or SVG/SMIL decision and preserves its readable static state and fallback.
+- Creative effects preserve a readable fallback. The user may inspect the created Creative draft in the real editor and decide whether to retain or simplify it.
 
 ### Markup and media
 
@@ -223,10 +242,12 @@ Use only when the scale and scoring method are meaningful. A rating without a de
 ### Validation
 
 ```powershell
-python scripts/audit_audience_boundary.py article.html
-python scripts/audit_wechat_widths.py article.html
-python scripts/audit_wechat_typography.py article.html
-python scripts/audit_wechat_contrast.py article.html
+python scripts/audit_wechat_markup.py article.html --contract design-contract.json
+python scripts/audit_audience_boundary.py article.html --contract design-contract.json
+python scripts/audit_wechat_widths.py article.html --contract design-contract.json
+python scripts/audit_wechat_typography.py article.html --contract design-contract.json
+python scripts/audit_wechat_contrast.py article.html --contract design-contract.json
+python scripts/audit_design_contract.py article.html --contract design-contract.json
 ```
 
 Resolve every finding. Then inspect approximately 320px, 375px, and 390px widths and use the real WeChat editor and phone preview for the final rendering decision.

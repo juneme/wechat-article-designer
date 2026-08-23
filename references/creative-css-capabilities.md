@@ -4,6 +4,20 @@ Use this reference to choose Steady or Creative delivery and to decide what must
 
 Browser rendering proves only browser behavior. Local audits detect known hazards but do not prove that the WeChat editor preserves a declaration. The exact final fragment and phone preview are the authority for any conditional capability.
 
+## Required effects decision
+
+Every new full article and substantial redesign must record one of these outcomes in `design-contract.json`:
+
+| Outcome | Choose when |
+|---|---|
+| `none` | Type, spacing, color, rules, and media already carry the reading job; motion or expressive effects would be decorative or cannot be tested |
+| Static expressive CSS | A gradient, shadow, outline, transform, or related visual treatment materially supports hierarchy and has a readable solid fallback |
+| SVG/SMIL | Motion materially clarifies one sequence, comparison, reveal, state change, or emphasis and follows `svg-design-genes.md` |
+
+The decision is mandatory; the effect is not. Record the semantic job, static state, fallback, compatibility risk, and test obligation. Do not add an effect only because Creative capability exists. Conditional CSS and real tables require a recorded exception and readable fallback before draft creation; the user may perform the exact editor and phone review on the resulting Creative draft.
+
+CSS keyframe animation is excluded from publishable fragments because it depends on a `style` block and `@keyframes`, which the article contract forbids and the editor may rewrite. Use the established inline SVG/SMIL vocabulary when meaningful motion is required.
+
 ## Capability matrix
 
 | Tier | Suitable techniques | Rule |
@@ -18,7 +32,7 @@ Tables are excluded from visual layout. Use a table only when the content is tru
 
 ## Steady mode
 
-Choose Steady when the article is institutional, high-risk, evidence-heavy, frequently edited after handoff, or cannot be tested in the real editor.
+Choose Steady when the article is institutional, high-risk, evidence-heavy, or frequently edited after handoff. Lack of a prior real-editor test alone does not force Steady when a safe Creative draft can be created for user review.
 
 - Use solid fields, ordinary borders, stable single-column flow, and restrained radii.
 - Prefer type, spacing, rules, and image rhythm over decorative containers.
@@ -73,7 +87,8 @@ Use SVG for one clear editorial job and keep the first frame meaningful. Essenti
 
 Use the stricter outcome whenever evidence is incomplete:
 
-- no real-editor test: ship Steady;
+- no prior real-editor test: create only a readable-fallback Creative draft, then let the user decide whether to retain or simplify it;
 - editor strips an optional effect: keep the readable fallback;
 - editor changes structure or hides content: remove the pattern;
 - a pattern needs user explanation to work: replace it with visible static reading order.
+- the effects plan is missing or differs from the fragment: return to the design contract before delivery.

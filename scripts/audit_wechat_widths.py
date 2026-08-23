@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect width structures that can collapse after WeChat editor rewrites."""
+"""Detect width structures that exceed the hard 320px article limit."""
 
 from __future__ import annotations
 
@@ -11,7 +11,40 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
+try:
+    from .design_contract import (
+        ContractError,
+        exception_map,
+        load_contract,
+        validate_contract,
+    )
+except ImportError:
+    from design_contract import (  # type: ignore[no-redef]
+        ContractError,
+        exception_map,
+        load_contract,
+        validate_contract,
+    )
+
 PERCENTAGE = re.compile(r"^([0-9]+(?:\.[0-9]+)?)%$")
+PIXELS = re.compile(r"^([0-9]+(?:\.[0-9]+)?)px$")
+HARD_WIDTH_PX = 320.0
+VOID_TAGS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
 
 
 def _style_map(value: str) -> dict[str, str]:
@@ -29,11 +62,13 @@ class _Node:
         self,
         tag: str,
         style: dict[str, str],
+        attributes: dict[str, str | None],
         line: int,
         parent: _Node | None,
     ) -> None:
         self.tag = tag
         self.style = style
+        self.attributes = attributes
         self.line = line
         self.parent = parent
         self.children: list[_Node] = []
@@ -51,14 +86,22 @@ class _TreeParser(HTMLParser):
         node = _Node(
             tag=tag,
             style=_style_map(attributes.get("style") or ""),
+            attributes=attributes,
             line=self.getpos()[0],
             parent=parent,
         )
         if parent is not None:
             parent.children.append(node)
         self.nodes.append(node)
-        if tag not in {"area", "base", "br", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}:
+        if tag not in VOID_TAGS:
             self.stack.append(node)
+
+    def handle_startendtag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag not in VOID_TAGS:
+            self.handle_endtag(tag)
 
     def handle_endtag(self, tag: str) -> None:
         for index in range(len(self.stack) - 1, -1, -1):
@@ -67,11 +110,21 @@ class _TreeParser(HTMLParser):
                 break
 
 
-def _percentage(value: str | None) -> float | None:
+def _normalized(value: str | None) -> str | None:
     if value is None:
         return None
-    normalized = re.sub(r"\s*!important\s*$", "", value, flags=re.IGNORECASE)
-    match = PERCENTAGE.fullmatch(normalized.strip())
+    return re.sub(r"\s*!important\s*$", "", value, flags=re.IGNORECASE).strip()
+
+
+def _percentage(value: str | None) -> float | None:
+    normalized = _normalized(value)
+    match = PERCENTAGE.fullmatch(normalized or "")
+    return float(match.group(1)) if match else None
+
+
+def _pixels(value: str | None) -> float | None:
+    normalized = _normalized(value)
+    match = PIXELS.fullmatch(normalized or "")
     return float(match.group(1)) if match else None
 
 
@@ -82,15 +135,55 @@ def audit_html(value: str) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
 
     for node in parser.nodes:
-        width = _percentage(node.style.get("width"))
-        if width is not None and width > 100:
-            findings.append(
-                {
-                    "rule": "oversized_percentage_width",
-                    "line": node.line,
-                    "value": node.style["width"],
-                }
-            )
+        attribute_width = node.attributes.get("width")
+        if (
+            node.style.get("width") is None
+            and isinstance(attribute_width, str)
+            and re.fullmatch(r"[0-9]+(?:\.[0-9]+)?", attribute_width.strip())
+        ):
+            attribute_width = f"{attribute_width.strip()}px"
+        values: dict[str, str | None] = {
+            "width": node.style.get("width") or attribute_width,
+            "min-width": node.style.get("min-width"),
+            "max-width": node.style.get("max-width"),
+        }
+        for property_name, raw in values.items():
+            percent = _percentage(raw)
+            pixels = _pixels(raw)
+            if percent is not None and percent > 100:
+                findings.append(
+                    {
+                        "code": "width-over-100-percent",
+                        "severity": "error",
+                        "line": node.line,
+                        "property": property_name,
+                        "value": raw,
+                    }
+                )
+            if pixels is not None and pixels > HARD_WIDTH_PX:
+                findings.append(
+                    {
+                        "code": "fixed-width-over-320px",
+                        "severity": "error",
+                        "line": node.line,
+                        "property": property_name,
+                        "value": raw,
+                    }
+                )
+            normalized = _normalized(raw)
+            if normalized and percent is None and pixels is None and normalized not in {
+                "auto",
+                "none",
+            }:
+                findings.append(
+                    {
+                        "code": "unverifiable-width-expression",
+                        "severity": "warning",
+                        "line": node.line,
+                        "property": property_name,
+                        "value": raw,
+                    }
+                )
 
         if node.style.get("overflow-x") not in {"auto", "scroll"}:
             continue
@@ -103,11 +196,24 @@ def audit_html(value: str) -> list[dict[str, Any]]:
         if non_card_children:
             findings.append(
                 {
-                    "rule": "swipe_items_not_direct_inline_blocks",
+                    "code": "swipe-items-not-direct-inline-blocks",
+                    "severity": "error",
                     "line": node.line,
                     "child_lines": [child.line for child in non_card_children],
                 }
             )
+
+        for child in node.children:
+            child_width = _pixels(child.style.get("width"))
+            if child_width is not None and child_width > HARD_WIDTH_PX:
+                findings.append(
+                    {
+                        "code": "swipe-item-over-320px",
+                        "severity": "error",
+                        "line": child.line,
+                        "value": child.style.get("width"),
+                    }
+                )
 
         ancestor = node.parent
         while ancestor is not None:
@@ -116,7 +222,8 @@ def audit_html(value: str) -> list[dict[str, Any]]:
             ) == "hidden":
                 findings.append(
                     {
-                        "rule": "swipe_inside_clipping_ancestor",
+                        "code": "swipe-inside-clipping-ancestor",
+                        "severity": "error",
                         "line": node.line,
                         "ancestor_line": ancestor.line,
                     }
@@ -139,9 +246,10 @@ def _article_html(path: Path) -> str:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Detect WeChat width and swipe structures that can collapse"
+        description="Detect widths that exceed the hard 320px WeChat limit"
     )
     parser.add_argument("article", help="HTML or article JSON path")
+    parser.add_argument("--contract", type=Path, required=True)
     return parser
 
 
@@ -151,27 +259,47 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if not path.is_file():
             raise ValueError(f"article file does not exist: {args.article}")
+        contract = load_contract(args.contract)
+        validate_contract(contract, required_status="READY")
+        acknowledged = exception_map(contract)
         findings = audit_html(_article_html(path))
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        for finding in findings:
+            if finding["severity"] != "warning":
+                finding["acknowledged"] = False
+                continue
+            reason = acknowledged.get(str(finding["code"]))
+            finding["severity"] = "warning" if reason else "error"
+            finding["acknowledged"] = bool(reason)
+            if reason:
+                finding["exception_reason"] = reason
+    except (
+        OSError,
+        UnicodeError,
+        json.JSONDecodeError,
+        ContractError,
+        ValueError,
+    ) as exc:
         print(
             json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False),
             file=sys.stderr,
         )
         return 1
 
+    errors = [item for item in findings if item["severity"] == "error"]
     print(
         json.dumps(
             {
-                "ok": not findings,
+                "ok": not errors,
                 "article": path.name,
-                "finding_count": len(findings),
+                "error_count": len(errors),
+                "warning_count": len(findings) - len(errors),
                 "findings": findings,
             },
             ensure_ascii=False,
             indent=2,
         )
     )
-    return 0 if not findings else 2
+    return 0 if not errors else 2
 
 
 if __name__ == "__main__":

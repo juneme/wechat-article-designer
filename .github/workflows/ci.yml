@@ -24,8 +24,17 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
 
-      - name: Compile scripts
-        run: python -m compileall -q scripts
+      - name: Validate skill package
+        run: python scripts/quick_validate.py .
+
+      - name: Parse scripts without cache output
+        run: python -B -c "import ast,pathlib; [ast.parse(p.read_text(encoding='utf-8')) for p in pathlib.Path('scripts').glob('*.py')]"
 
       - name: Lint Python
-        run: python -m ruff check .
+        run: python -m ruff check --no-cache .
+
+      - name: Run behavior tests
+        run: python -B -m unittest discover -s tests -v
+
+      - name: Audit release hygiene
+        run: python -B scripts/audit_release_hygiene.py .

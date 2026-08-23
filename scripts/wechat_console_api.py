@@ -17,6 +17,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
+try:
+    from .audit_wechat_markup import MarkupParser
+except ImportError:
+    from audit_wechat_markup import MarkupParser  # type: ignore[no-redef]
+
 MAX_IMAGES = 20
 MAX_CONTENT_CHARACTERS = 20_000
 MAX_CONTENT_BYTES = 1_000_000
@@ -36,9 +41,18 @@ ALLOWED_DRAFT_FIELDS = {
 
 
 class ConsoleApiError(RuntimeError):
-    def __init__(self, message: str, *, http_status: int | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        http_status: int | None = None,
+        ambiguous: bool = False,
+        response_payload: dict[str, Any] | None = None,
+    ) -> None:
         super().__init__(message)
         self.http_status = http_status
+        self.ambiguous = ambiguous
+        self.response_payload = response_payload
 
 
 class _ArticleInspector(HTMLParser):
@@ -54,7 +68,11 @@ class _ArticleInspector(HTMLParser):
         for name, value in attrs:
             if name.lower().startswith("on"):
                 self.errors.append(f"content must not contain event attribute {name}")
-            if lowered == "img" and name.lower() == "src" and value:
+            if lowered in {"img", "image"} and name.lower() in {
+                "src",
+                "href",
+                "xlink:href",
+            } and value:
                 self.image_urls.append(value.strip())
 
 
@@ -105,18 +123,22 @@ def _decode_json(raw: bytes, context: str) -> Any:
         raise ConsoleApiError(f"{context} returned invalid JSON") from exc
 
 
-def _error_message(exc: HTTPError) -> str:
+def _error_details(exc: HTTPError) -> tuple[str, dict[str, Any] | None]:
     try:
         payload = _decode_json(exc.read(), "console API error")
     except ConsoleApiError:
-        return f"console API returned HTTP {exc.code}"
+        return f"console API returned HTTP {exc.code}", None
     if isinstance(payload, dict):
         detail = payload.get("detail") or payload.get("error") or payload.get("message")
         if isinstance(detail, str) and detail.strip():
-            return detail.strip()
+            return detail.strip(), payload
         if detail is not None:
-            return json.dumps(detail, ensure_ascii=False, separators=(",", ":"))
-    return f"console API returned HTTP {exc.code}"
+            return (
+                json.dumps(detail, ensure_ascii=False, separators=(",", ":")),
+                payload,
+            )
+        return f"console API returned HTTP {exc.code}", payload
+    return f"console API returned HTTP {exc.code}", None
 
 
 def _request_json(
@@ -141,7 +163,12 @@ def _request_json(
         with urlopen(request, timeout=timeout) as response:
             return response.status, _decode_json(response.read(), "console API")
     except HTTPError as exc:
-        raise ConsoleApiError(_error_message(exc), http_status=exc.code) from exc
+        message, payload = _error_details(exc)
+        raise ConsoleApiError(
+            message,
+            http_status=exc.code,
+            response_payload=payload,
+        ) from exc
     except URLError as exc:
         reason = getattr(exc, "reason", exc)
         raise ConsoleApiError(f"cannot reach console API: {reason}") from exc
@@ -288,13 +315,23 @@ def _validate_content(content: str) -> dict[str, int]:
             f"draft content must be under {MAX_CONTENT_BYTES} bytes; got {byte_count}"
         )
     inspector = _ArticleInspector()
+    compatibility = MarkupParser()
     try:
         inspector.feed(content)
         inspector.close()
+        compatibility.feed(content)
+        compatibility.close()
     except Exception as exc:
         raise ConsoleApiError("draft content is not parseable HTML") from exc
     if inspector.errors:
         raise ConsoleApiError("; ".join(dict.fromkeys(inspector.errors)))
+    compatibility_errors = [
+        str(item["message"])
+        for item in compatibility.findings
+        if not item["warning_candidate"]
+    ]
+    if compatibility_errors:
+        raise ConsoleApiError("; ".join(dict.fromkeys(compatibility_errors)))
     for source in inspector.image_urls:
         parsed = urlsplit(source)
         hostname = (parsed.hostname or "").lower()
@@ -364,29 +401,67 @@ def _build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("status", help="check console health and local configuration")
 
-    upload = subparsers.add_parser(
-        "upload-images", help="upload one or more article or material images"
-    )
-    upload.add_argument("images", nargs="+")
-    upload.add_argument(
-        "--mode", choices=("article", "material", "both"), default="article"
-    )
-
-    cover = subparsers.add_parser(
-        "upload-cover", help="upload one cover as permanent WeChat material"
-    )
-    cover.add_argument("image")
-
     validate = subparsers.add_parser(
         "validate-draft", help="validate article JSON without creating a draft"
     )
     validate.add_argument("--article", required=True)
 
-    create = subparsers.add_parser(
-        "create-draft", help="create an idempotent WeChat draft"
+    subparsers.add_parser(
+        "create-draft", help="explain the enforced workspace release entrypoint"
     )
-    create.add_argument("--article", required=True)
     return parser
+
+
+def _create_draft_article(path_value: str) -> tuple[dict[str, Any], int]:
+    """Create a draft after the release orchestrator has completed every gate."""
+    draft, validation = _load_draft(path_value)
+    body = json.dumps(draft, ensure_ascii=False, separators=(",", ":")).encode(
+        "utf-8"
+    )
+    publish_key = _required_env("WECHAT_PUBLISH_API_KEY")
+    _base_url()
+    try:
+        http_status, response = _request_json(
+            "POST",
+            "/api/v1/wechat-drafts",
+            api_key=publish_key,
+            body=body,
+            content_type="application/json; charset=utf-8",
+        )
+    except ConsoleApiError as exc:
+        confirmed_no_draft = (
+            exc.http_status == 503
+            and isinstance(exc.response_payload, dict)
+            and exc.response_payload.get("draft_created") is False
+        )
+        if exc.http_status not in {400, 401, 409, 422} and not confirmed_no_draft:
+            exc.ambiguous = True
+        raise
+    if not isinstance(response, dict):
+        raise ConsoleApiError("draft API returned an invalid response", ambiguous=True)
+    result = dict(response)
+    result.update(
+        {
+            "operation": "create_draft",
+            "local_validation": validation,
+            "warnings": _transport_warnings(),
+        }
+    )
+    if http_status == 202 or response.get("status") == "pending":
+        result["ambiguous"] = True
+        result["do_not_retry"] = True
+        return result, 2
+    if response.get("status") == "unknown":
+        result["ambiguous"] = True
+        result["do_not_retry"] = True
+        return result, 2
+    if (
+        response.get("status") != "created"
+        or not response.get("media_id")
+        or response.get("request_id") != draft["request_id"]
+    ):
+        raise ConsoleApiError("draft API did not confirm draft creation", ambiguous=True)
+    return result, 0
 
 
 def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
@@ -407,35 +482,6 @@ def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             "server_healthy": isinstance(server, dict) and server.get("status") == "ok",
             "warnings": _transport_warnings(),
         }, 0
-    if args.command == "upload-images":
-        result = _upload_images(_resolve_images(args.images), args.mode)
-        result["warnings"] = _transport_warnings()
-        has_errors = bool(result.get("error_count")) or any(
-            item.get("status") != "complete"
-            or bool(item.get("errors"))
-            or (args.mode in {"article", "both"} and not item.get("article_url"))
-            or (args.mode in {"material", "both"} and not item.get("media_id"))
-            for item in result["items"]
-        )
-        return result, 2 if has_errors else 0
-    if args.command == "upload-cover":
-        result = _upload_images(_resolve_images([args.image]), "material")
-        item = result["items"][0]
-        if (
-            item.get("status") != "complete"
-            or item.get("errors")
-            or not item.get("media_id")
-        ):
-            raise ConsoleApiError("cover upload did not return a permanent media_id")
-        return {
-            "operation": "upload_cover",
-            "source_path": item["source_path"],
-            "filename": item.get("filename"),
-            "media_id": item["media_id"],
-            "material_url": item.get("material_url") or item.get("url"),
-            "item": item,
-            "warnings": _transport_warnings(),
-        }, 0
     if args.command == "validate-draft":
         draft, validation = _load_draft(args.article)
         return {
@@ -447,36 +493,10 @@ def _run(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             "validation": validation,
         }, 0
     if args.command == "create-draft":
-        draft, validation = _load_draft(args.article)
-        body = json.dumps(draft, ensure_ascii=False, separators=(",", ":")).encode(
-            "utf-8"
+        raise ConsoleApiError(
+            "direct draft creation is disabled; run "
+            "python scripts/release_article.py deliver <article-workspace>"
         )
-        http_status, response = _request_json(
-            "POST",
-            "/api/v1/wechat-drafts",
-            api_key=_required_env("WECHAT_PUBLISH_API_KEY"),
-            body=body,
-            content_type="application/json; charset=utf-8",
-        )
-        if not isinstance(response, dict):
-            raise ConsoleApiError("draft API returned an invalid response")
-        result = dict(response)
-        result.update(
-            {
-                "operation": "create_draft",
-                "local_validation": validation,
-                "warnings": _transport_warnings(),
-            }
-        )
-        if http_status == 202 or response.get("status") == "pending":
-            return result, 2
-        if (
-            response.get("status") != "created"
-            or not response.get("media_id")
-            or response.get("request_id") != draft["request_id"]
-        ):
-            raise ConsoleApiError("draft API did not confirm draft creation")
-        return result, 0
     raise ConsoleApiError(f"unsupported command: {args.command}")
 
 
@@ -488,6 +508,9 @@ def main(argv: list[str] | None = None) -> int:
         error: dict[str, Any] = {"ok": False, "error": str(exc)}
         if exc.http_status is not None:
             error["http_status"] = exc.http_status
+        if args.command == "create-draft" and exc.ambiguous:
+            error["ambiguous"] = True
+            error["do_not_retry"] = True
         print(json.dumps(error, ensure_ascii=False), file=sys.stderr)
         return 1
     print(json.dumps(result, ensure_ascii=False, indent=2))

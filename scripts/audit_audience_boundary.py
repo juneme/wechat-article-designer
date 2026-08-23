@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detect source-instruction and work-process residue in publishable copy."""
+"""Detect agent-workflow language and private residue in article workspaces."""
 
 from __future__ import annotations
 
@@ -11,88 +11,132 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
+try:
+    from .design_contract import (
+        ContractError,
+        exception_map,
+        load_contract,
+        validate_contract,
+    )
+except ImportError:
+    from design_contract import (  # type: ignore[no-redef]
+        ContractError,
+        exception_map,
+        load_contract,
+        validate_contract,
+    )
+
 PATTERNS = (
     (
-        "instruction_echo_zh",
+        "instruction-echo",
         re.compile(
-            r"(?:\u6309|\u6309\u7167|\u6839\u636e)"
-            r"(?:\u4f60|\u7528\u6237)(?:\u7684)?"
-            r"(?:\u8981\u6c42|\u53cd\u9988|\u610f\u89c1)"
-        ),
-    ),
-    (
-        "source_history_zh",
-        re.compile(
-            r"(?:\u8fd9|\u672c|\u4e0a|\u4e0a\u4e00|\u521a\u624d)"
-            r"(?:\u4e00)?(?:\u8f6e|\u6b21)?"
-            r"(?:\u5bf9\u8bdd|\u804a\u5929)"
-            r"|(?:\u4f60|\u6211\u4eec)\u521a\u624d"
-            r"(?:\u8bf4|\u63d0\u5230|\u8ba8\u8bba)"
-        ),
-    ),
-    (
-        "workflow_narration_zh",
-        re.compile(
-            r"(?:\u6211|\u6211\u4eec)"
-            r"(?:\u5df2\u7ecf|\u5df2|\u4f1a|\u5c06|\u6b63\u5728)"
-            r"(?:\u4e3a\u4f60|\u66ff\u4f60)?"
-            r"(?:\u4fee\u6539|\u751f\u6210|\u521b\u5efa|\u4e0a\u4f20|"
-            r"\u68c0\u67e5|\u5904\u7406|\u7ee7\u7eed|\u5b8c\u6210)"
-        ),
-    ),
-    (
-        "action_request_zh",
-        re.compile(
-            r"(?:\u8bf7|\u53ef\u4ee5)?\u56de\u590d[\uff1a:]"
-            r"|\u4f60(?:\u56de\u590d|\u786e\u8ba4)\u540e"
-            r"|\u7b49\u5f85\u4f60(?:\u56de\u590d|\u786e\u8ba4)"
-        ),
-    ),
-    (
-        "private_context_zh",
-        re.compile(
-            r"(?:\u5f53\u524d|\u672c\u6b21)"
-            r"(?:\u4efb\u52a1|\u5de5\u4f5c\u533a|\u4f1a\u8bdd|\u8fd0\u884c)"
-            r"|(?:\u672c\u5730|\u5de5\u4f5c\u533a)"
-            r"(?:\u6587\u4ef6|\u8def\u5f84)"
-            r"|[A-Za-z]:\\"
-        ),
-    ),
-    (
-        "instruction_echo_en",
-        re.compile(r"\b(?:as|per) \x79\x6f\x75 requested\b", re.IGNORECASE),
-    ),
-    (
-        "source_history_en",
-        re.compile(
-            r"\b(?:in this \x63\x68\x61\x74|"
-            r"earlier in \x6f\x75\x72 "
-            r"\x63\x6f\x6e\x76\x65\x72\x73\x61\x74\x69\x6f\x6e)\b",
+            r"(?:按|按照|根据)(?:你|用户)(?:的)?(?:要求|反馈|意见)"
+            r"|(?:as|per) you requested",
             re.IGNORECASE,
         ),
     ),
     (
-        "workflow_narration_en",
+        "conversation-history",
         re.compile(
-            r"\b\x49 (?:have|will|am going to) "
-            r"(?:generated|created|uploaded|updated|checked)\b",
+            r"(?:这|本|上|上一|刚才)(?:一)?(?:轮|次)?(?:对话|聊天)"
+            r"|(?:你|我们)刚才(?:说|提到|讨论)"
+            r"|\b(?:in this chat|earlier in our conversation)\b",
             re.IGNORECASE,
         ),
     ),
     (
-        "action_request_en",
-        re.compile(r"\b(?:reply with|once \x79\x6f\x75 confirm)\b", re.IGNORECASE),
+        "workflow-narration",
+        re.compile(
+            r"(?:我|我们)(?:已经|已|会|将|正在|可以)(?:为你|替你)?"
+            r"(?:修改|生成|创建|上传|检查|处理|继续|完成|优化|排版)"
+            r"|(?:已|已经)(?:为你)?(?:生成|创建|上传|修改|完成|优化)"
+            r"|\bI (?:have|will|can|am going to) "
+            r"(?:generate|create|upload|update|check|continue|revise)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "agent-offer",
+        re.compile(
+            r"如果你(?:希望|需要|愿意)"
+            r"|如需我(?:继续|修改|调整)"
+            r"|我可以(?:继续|再|为你)"
+            r"|\bif you(?: would like| want| need),? I can\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "reply-request",
+        re.compile(
+            r"请(?:告诉我|回复|确认|选择)"
+            r"|你(?:回复|确认)后"
+            r"|等待你(?:回复|确认)"
+            r"|\b(?:reply with|tell me|once you confirm)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "private-context",
+        re.compile(
+            r"(?:当前|本次)(?:任务|工作区|会话|运行)"
+            r"|(?:本地|工作区)(?:文件|路径)"
+            r"|[A-Za-z]:\\(?:Users|Documents)\\"
+            r"|/Users/[^/]+/",
+            re.IGNORECASE,
+        ),
     ),
 )
+
+VOID_TAGS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr",
+}
 
 
 class _TextExtractor(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.parts: list[str] = []
+        self.context: list[tuple[str, bool]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        inherited = self.context[-1][1] if self.context else False
+        suppressed = inherited or attributes.get("data-content-kind") in {
+            "dialogue",
+            "quotation",
+        }
+        if tag not in VOID_TAGS:
+            self.context.append((tag, suppressed))
+
+    def handle_startendtag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag not in VOID_TAGS:
+            self.handle_endtag(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        for index in range(len(self.context) - 1, -1, -1):
+            if self.context[index][0] == tag:
+                del self.context[index:]
+                break
 
     def handle_data(self, data: str) -> None:
-        self.parts.append(data)
+        if not self.context or not self.context[-1][1]:
+            self.parts.append(data)
 
 
 def _html_text(value: str) -> str:
@@ -121,28 +165,38 @@ def _article_text(path: Path) -> str:
     return " ".join(fields)
 
 
-def audit_text(value: str) -> list[dict[str, str]]:
+def audit_text(
+    value: str,
+    *,
+    acknowledged: dict[str, str] | None = None,
+) -> list[dict[str, str | bool]]:
     normalized = re.sub(r"\s+", " ", value).strip()
-    findings: list[dict[str, str]] = []
-    for rule, pattern in PATTERNS:
+    exceptions = acknowledged or {}
+    findings: list[dict[str, str | bool]] = []
+    for code, pattern in PATTERNS:
         for match in pattern.finditer(normalized):
             start = max(0, match.start() - 28)
             end = min(len(normalized), match.end() + 28)
-            findings.append(
-                {
-                    "rule": rule,
-                    "match": match.group(0),
-                    "context": normalized[start:end],
-                }
-            )
+            is_acknowledged = code in exceptions
+            finding: dict[str, str | bool] = {
+                "code": code,
+                "severity": "warning" if is_acknowledged else "error",
+                "acknowledged": is_acknowledged,
+                "match": match.group(0),
+                "context": normalized[start:end],
+            }
+            if is_acknowledged:
+                finding["exception_reason"] = exceptions[code]
+            findings.append(finding)
     return findings
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Detect source-instruction residue in audience-facing article copy"
+        description="Detect agent-workflow residue in article copy and workspace HTML"
     )
     parser.add_argument("article", help="HTML, text, or article JSON path")
+    parser.add_argument("--contract", type=Path, required=True)
     return parser
 
 
@@ -152,27 +206,38 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if not path.is_file():
             raise ValueError(f"article file does not exist: {args.article}")
-        findings = audit_text(_article_text(path))
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        contract = load_contract(args.contract)
+        validate_contract(contract, required_status="READY")
+        acknowledged = exception_map(contract)
+        findings = audit_text(_article_text(path), acknowledged=acknowledged)
+    except (
+        OSError,
+        UnicodeError,
+        json.JSONDecodeError,
+        ContractError,
+        ValueError,
+    ) as exc:
         print(
             json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False),
             file=sys.stderr,
         )
         return 1
 
+    errors = [item for item in findings if item["severity"] == "error"]
     print(
         json.dumps(
             {
-                "ok": not findings,
+                "ok": not errors,
                 "article": path.name,
-                "finding_count": len(findings),
+                "error_count": len(errors),
+                "warning_count": len(findings) - len(errors),
                 "findings": findings,
             },
             ensure_ascii=False,
             indent=2,
         )
     )
-    return 0 if not findings else 2
+    return 0 if not errors else 2
 
 
 if __name__ == "__main__":

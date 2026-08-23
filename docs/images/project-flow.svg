@@ -63,7 +63,7 @@
     <rect x="1206" y="282" width="58" height="6" fill="#AAA59C"/>
     <rect x="1206" y="299" width="68" height="6" fill="#D0CBC2"/>
     <rect x="1206" y="316" width="46" height="6" fill="#D0CBC2"/>
-    <text x="1324" y="276" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="18" font-weight="700">AUTHORIZED</text>
+    <text x="1324" y="276" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="18" font-weight="700">AUTO WHEN READY</text>
     <text x="1324" y="304" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="18" font-weight="700">DRAFT ONLY</text>
     <text x="1324" y="337" fill="#AAA59C" font-family="Arial, sans-serif" font-size="14" font-weight="700">FINAL SEND STAYS MANUAL</text>
   </g>
