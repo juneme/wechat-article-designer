@@ -52,6 +52,9 @@ INHERITED_PROPERTIES = {
     "white-space",
     "word-break",
 }
+MANUAL_INDENT_SPACE = re.compile(
+    r"^[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]"
+)
 
 
 def parse_style(raw: str) -> dict[str, str]:
@@ -341,12 +344,12 @@ def audit_html(
             ("\r", "\n", "\t")
         )
         leading_content = visible.lstrip(" \t\r\n")
-        if leading_ascii or leading_content.startswith(("\u3000", "\u00a0")):
+        if leading_ascii or MANUAL_INDENT_SPACE.match(leading_content):
             _add(
                 findings,
                 "manual-space-indentation",
                 node.line,
-                "Use CSS text-indent; do not simulate indentation with spaces or NBSP.",
+                "Use CSS text-indent; do not simulate indentation with ASCII, Unicode, or nonbreaking spaces.",
             )
 
     return findings

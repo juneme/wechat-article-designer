@@ -204,6 +204,14 @@ class ArticleAuditTests(unittest.TestCase):
         self.assertIn("first-line-indent-contract-mismatch", codes)
         self.assertIn("manual-space-indentation", codes)
 
+        double_indent = good.replace(">正文内容。", ">&emsp;&emsp;正文内容。")
+        double_codes = {
+            item["code"]
+            for item in audit_wechat_typography.audit_html(double_indent, contract)
+        }
+        self.assertIn("manual-space-indentation", double_codes)
+        self.assertNotIn("first-line-indent-contract-mismatch", double_codes)
+
     def test_markup_rejects_active_html_keyframes_and_local_images(self) -> None:
         contract = ready_contract("Test")
         value = (
