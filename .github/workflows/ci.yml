@@ -33,8 +33,5 @@ jobs:
       - name: Lint Python
         run: python -m ruff check --no-cache .
 
-      - name: Run behavior tests
-        run: python -B -m unittest discover -s tests -v
-
       - name: Audit release hygiene
         run: python -B scripts/audit_release_hygiene.py .

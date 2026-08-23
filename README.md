@@ -110,8 +110,13 @@ $env:PYTHONUTF8='1'
 python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" .
 python -B -c "import ast,pathlib; [ast.parse(p.read_text(encoding='utf-8')) for p in pathlib.Path('scripts').glob('*.py')]"
 python -m ruff check --no-cache .
-python -m unittest discover -s tests -v
 python scripts/audit_release_hygiene.py . --clean
+```
+
+发布 ZIP 必须直接从完整 Git `HEAD` 生成，不得使用额外排除规则。除 `.git` 元数据外，压缩包内 `wechat-article-designer/` 的文件清单和内容必须与 `main` 逐文件一致：
+
+```powershell
+git -c core.autocrlf=false archive --format=zip --prefix=wechat-article-designer/ --output=wechat-article-designer.zip HEAD
 ```
 
 生成文章后再运行受众边界、移动宽度、中文排版和颜色对比审查：

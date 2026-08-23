@@ -13,7 +13,16 @@ from pathlib import Path
 CACHE_DIRS = {".mypy_cache", ".pytest_cache", ".ruff_cache", "__pycache__"}
 CACHE_FILES = {".coverage"}
 CACHE_SUFFIXES = {".pyc", ".pyo"}
-WORK_DIRS = {"articles", "experiments", "outputs", "scratch", "temp", "tmp", "work"}
+WORK_DIRS = {
+    "articles",
+    "experiments",
+    "outputs",
+    "scratch",
+    "temp",
+    "tests",
+    "tmp",
+    "work",
+}
 ARTICLE_ARTIFACTS = {
     "article.json",
     "design-contract.json",
@@ -112,7 +121,11 @@ def audit_root(root: Path) -> list[dict[str, object]]:
             continue
         if path.is_dir():
             if path.name.lower() in WORK_DIRS:
-                add("work-data", path, "Working, experimental, or generated-output directory is not releasable.")
+                add(
+                    "work-data",
+                    path,
+                    "Development-test, working, experimental, or generated-output directory is not releasable.",
+                )
             continue
         if path.name in ARTICLE_ARTIFACTS:
             add("article-artifact", path, "Generated article workspace data is not releasable.")
@@ -125,10 +138,7 @@ def audit_root(root: Path) -> list[dict[str, object]]:
         except (OSError, UnicodeError) as exc:
             add("text-read-error", path, f"Cannot read text release file: {exc}")
             continue
-        relative = path.relative_to(root)
-        inspect_transcript_content = (
-            path.name != "README.md" and "tests" not in relative.parts
-        )
+        inspect_transcript_content = path.name != "README.md"
         for line_number, line in enumerate(value.splitlines(), start=1):
             if LOCAL_PATH.search(line):
                 add("local-absolute-path", path, "Local absolute path is embedded in a release file.", line_number)
