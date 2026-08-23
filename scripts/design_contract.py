@@ -132,6 +132,10 @@ def empty_contract(
             "caption_gap_px": 8,
             "dense_row_padding_px": 16,
             "used_spacing_roles": ["section-gap", "paragraph-gap"],
+            "spacing_scales_px": {
+                "section-gap": [42],
+                "paragraph-gap": [10],
+            },
             "density_curve": [],
             "alignment_behavior": "",
         },
@@ -304,6 +308,38 @@ def _string_list(value: Any, path: str, errors: list[str]) -> list[str]:
     if not result:
         errors.append(f"{path} must contain at least one item")
     return result
+
+
+def _validate_typography_signature(
+    role: str,
+    value: Any,
+    path: str,
+    errors: list[str],
+) -> None:
+    item = _mapping(value, path, errors)
+    size_range, leading_range = HARD_TYPE_RANGES[role]
+    _string_list(item.get("font_stack"), f"{path}.font_stack", errors)
+    _number_range(item.get("font_size_px"), f"{path}.font_size_px", *size_range, errors)
+    _number_range(item.get("line_height"), f"{path}.line_height", *leading_range, errors)
+    weight = item.get("font_weight")
+    if type(weight) is not int or not 100 <= weight <= 900:
+        errors.append(f"{path}.font_weight must be 100-900")
+    if item.get("alignment") not in ALIGNMENTS:
+        errors.append(f"{path}.alignment must be left, center, or right")
+    letter_spacing = _number_range(
+        item.get("letter_spacing_px"),
+        f"{path}.letter_spacing_px",
+        -1,
+        4,
+        errors,
+    )
+    if role == "body" and letter_spacing is not None and letter_spacing != 0:
+        errors.append(f"{path}.letter_spacing_px must be 0 for body text")
+    wrap = _text(item.get("wrap"), f"{path}.wrap", errors)
+    if wrap and not re.fullmatch(
+        r"(?:overflow-wrap|word-break|white-space):[^:;]+", wrap
+    ):
+        errors.append(f"{path}.wrap must be one inline property:value pair")
 
 
 def _reasoned_color(
@@ -548,6 +584,36 @@ def validate_contract(
     for role in spacing_roles:
         if role not in SPACING_ROLES:
             errors.append(f"layout.used_spacing_roles contains unsupported role {role!r}")
+    spacing_scales_value = layout.get("spacing_scales_px")
+    if spacing_scales_value is not None:
+        spacing_scales = _mapping(
+            spacing_scales_value, "layout.spacing_scales_px", errors
+        )
+        if set(spacing_scales) != set(spacing_roles):
+            errors.append(
+                "layout.spacing_scales_px keys must match layout.used_spacing_roles"
+            )
+        for role, scale_value in spacing_scales.items():
+            scale = _list(scale_value, f"layout.spacing_scales_px.{role}", errors)
+            if not scale:
+                errors.append(
+                    f"layout.spacing_scales_px.{role} must contain at least one value"
+                )
+            parsed = [
+                _number_range(
+                    item,
+                    f"layout.spacing_scales_px.{role}[{index}]",
+                    0,
+                    80,
+                    errors,
+                )
+                for index, item in enumerate(scale)
+            ]
+            concrete = [item for item in parsed if item is not None]
+            if concrete != sorted(set(concrete)):
+                errors.append(
+                    f"layout.spacing_scales_px.{role} must be sorted and unique"
+                )
     density_curve = _string_list(
         layout.get("density_curve"), "layout.density_curve", errors
     )
@@ -568,7 +634,6 @@ def validate_contract(
         2,
         errors,
     )
-    exceptions = exception_map(contract)
     _text(
         typography.get("role_relationships"),
         "typography.role_relationships",
@@ -582,47 +647,25 @@ def validate_contract(
             errors.append(f"typography.roles.{role} is not a supported role")
             continue
         item = _mapping(values, f"typography.roles.{role}", errors)
-        size_range, leading_range = HARD_TYPE_RANGES[role]
-        _string_list(
-            item.get("font_stack"),
-            f"typography.roles.{role}.font_stack",
-            errors,
+        _validate_typography_signature(
+            role, item, f"typography.roles.{role}", errors
         )
-        _number_range(
-            item.get("font_size_px"),
-            f"typography.roles.{role}.font_size_px",
-            *size_range,
-            errors,
-        )
-        _number_range(
-            item.get("line_height"),
-            f"typography.roles.{role}.line_height",
-            *leading_range,
-            errors,
-        )
-        weight = item.get("font_weight")
-        if type(weight) is not int or not 100 <= weight <= 900:
-            errors.append(f"typography.roles.{role}.font_weight must be 100-900")
-        if item.get("alignment") not in ALIGNMENTS:
-            errors.append(
-                f"typography.roles.{role}.alignment must be left, center, or right"
+        variants_value = item.get("variants")
+        if variants_value is not None:
+            variants = _list(
+                variants_value, f"typography.roles.{role}.variants", errors
             )
-        letter_spacing = _number_range(
-            item.get("letter_spacing_px"),
-            f"typography.roles.{role}.letter_spacing_px",
-            -1,
-            4,
-            errors,
-        )
-        if role == "body" and letter_spacing is not None and letter_spacing != 0:
-            errors.append("typography.roles.body.letter_spacing_px must be 0")
-        wrap = _text(item.get("wrap"), f"typography.roles.{role}.wrap", errors)
-        if wrap and not re.fullmatch(
-            r"(?:overflow-wrap|word-break|white-space):[^:;]+", wrap
-        ):
-            errors.append(
-                f"typography.roles.{role}.wrap must be one inline property:value pair"
-            )
+            if not variants:
+                errors.append(
+                    f"typography.roles.{role}.variants must contain at least one variant"
+                )
+            for index, variant in enumerate(variants):
+                _validate_typography_signature(
+                    role,
+                    variant,
+                    f"typography.roles.{role}.variants[{index}]",
+                    errors,
+                )
 
     color = _mapping(contract.get("color"), "color", errors)
     _reasoned_color(color.get("field"), "color.field", errors, required=True)
@@ -733,28 +776,9 @@ def validate_contract(
         if value in seen_geometry_roles:
             errors.append(f"geometry.used_roles[{index}] duplicates {value}")
         seen_geometry_roles.add(value)
-    geometry_fields = {
-        "edge-language": "edge_language",
-        "divider-policy": "divider_policy",
-        "surface-policy": "surface_policy",
-        "radius-policy": "radius_policy",
-        "content-native-motif": "content_native_motif",
-    }
-    for role, field in geometry_fields.items():
-        decision = geometry.get(field)
-        active = (
-            isinstance(decision, str)
-            and bool(decision.strip())
-            and not re.match(r"^\s*(?:N/A|none)\s*:", decision, re.IGNORECASE)
-        )
-        if active and role not in seen_geometry_roles:
-            errors.append(f"geometry.used_roles must include {role!r} for geometry.{field}")
-        if not active and role in seen_geometry_roles:
-            errors.append(f"geometry.used_roles cannot include inactive role {role!r}")
     implementations = _mapping(
         geometry.get("implementations"), "geometry.implementations", errors
     )
-    legacy_migration = "legacy-contract-migration" in exceptions
     if set(implementations) != seen_geometry_roles:
         errors.append(
             "geometry.implementations keys must exactly match geometry.used_roles"
@@ -763,10 +787,6 @@ def validate_contract(
         declarations = _list(
             declarations_value, f"geometry.implementations.{role}", errors
         )
-        if not declarations and not legacy_migration:
-            errors.append(
-                f"geometry.implementations.{role} must contain an inline CSS declaration"
-            )
         for index, declaration in enumerate(declarations):
             value = _text(
                 declaration,
@@ -941,34 +961,48 @@ def contract_warnings(contract: dict[str, Any]) -> list[dict[str, object]]:
             if role == "body" or role not in TYPE_RANGES or not isinstance(values, dict):
                 continue
             size_range, leading_range = TYPE_RANGES[role]
-            size = values.get("font_size_px")
-            leading = values.get("line_height")
-            if (
-                isinstance(size, (int, float))
-                and isinstance(leading, (int, float))
-                and not isinstance(size, bool)
-                and not isinstance(leading, bool)
-                and (
-                    not size_range[0] <= float(size) <= size_range[1]
-                    or not leading_range[0] <= float(leading) <= leading_range[1]
+            variants = values.get("variants")
+            signatures = (
+                variants
+                if isinstance(variants, list) and variants
+                else [values]
+            )
+            for index, signature in enumerate(signatures):
+                if not isinstance(signature, dict):
+                    continue
+                path = (
+                    f"typography.roles.{role}.variants[{index}]"
+                    if signatures is variants
+                    else f"typography.roles.{role}"
                 )
-            ):
-                add(
-                    "typography-recommended-range",
-                    f"typography.roles.{role}",
-                    f"Role {role!r} is outside the usual mobile range; keep it when the selected composition remains readable.",
-                )
-            spacing = values.get("letter_spacing_px")
-            if (
-                isinstance(spacing, (int, float))
-                and not isinstance(spacing, bool)
-                and not -0.5 <= float(spacing) <= 2.5
-            ):
-                add(
-                    "letter-spacing-recommended-range",
-                    f"typography.roles.{role}.letter_spacing_px",
-                    f"Role {role!r} uses pronounced tracking; inspect the longest final string on a phone.",
-                )
+                size = signature.get("font_size_px")
+                leading = signature.get("line_height")
+                if (
+                    isinstance(size, (int, float))
+                    and isinstance(leading, (int, float))
+                    and not isinstance(size, bool)
+                    and not isinstance(leading, bool)
+                    and (
+                        not size_range[0] <= float(size) <= size_range[1]
+                        or not leading_range[0] <= float(leading) <= leading_range[1]
+                    )
+                ):
+                    add(
+                        "typography-recommended-range",
+                        path,
+                        f"Role {role!r} has a variant outside the usual mobile range; keep it when the selected composition remains readable.",
+                    )
+                spacing = signature.get("letter_spacing_px")
+                if (
+                    isinstance(spacing, (int, float))
+                    and not isinstance(spacing, bool)
+                    and not -0.5 <= float(spacing) <= 2.5
+                ):
+                    add(
+                        "letter-spacing-recommended-range",
+                        f"{path}.letter_spacing_px",
+                        f"Role {role!r} has a variant with pronounced tracking; inspect the longest final string on a phone.",
+                    )
 
     indent = typography.get("body_first_line_indent_em") if isinstance(typography, dict) else None
     if indent != 2.0:

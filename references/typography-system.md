@@ -4,7 +4,7 @@ Use this reference for every new full article and any redesign that changes hier
 
 ## Derive type roles from the copy
 
-Sketch the roles before HTML, then let `plan` extract the selected implementation's exact values:
+Sketch the roles before HTML, then let `plan` extract the selected implementation's actual values and variants:
 
 | Role | Typical mobile range | Leading | Use |
 |---|---:|---:|---|
@@ -20,12 +20,12 @@ Sketch the roles before HTML, then let `plan` extract the selected implementatio
 
 These are recommendation ranges. A non-body role outside them produces a design warning and may be retained when the selected composition remains legible. Body remains a hard reading range of 15-16px with 1.85-2.0 leading. Preserve a clear relationship between adjacent roles and test the actual longest text.
 
-Every visible role root uses `data-type-role` and explicit or inherited font stack, size, line height, weight, alignment, letter spacing, indentation, and one machine-parseable wrapping declaration. `plan` records the actual values in `design-contract.json`; it does not leave ranges or adjectives. The generated `design-contract.md` is for reading only. Omit a role only when the final copy does not contain it.
+Every visible HTML role root uses `data-type-role` and explicit or inherited font stack, size, line height, weight, alignment, letter spacing, indentation, and one machine-parseable wrapping declaration. One semantic role may intentionally use several implementations, such as a quiet and a dominant section heading; `plan` records every observed signature under that role's `variants` while retaining one representative value for compatibility. This is a relationship contract, not a demand for typographic uniformity. SVG coordinate text uses native SVG typography and is outside the HTML role contract. The generated `design-contract.md` is for reading only. Omit a role only when the final HTML copy does not contain it.
 
 ## Role relationships
 
 - Use the system sans stack for dependable Chinese rendering. Express serif, condensed, or monospace influence through role, weight, scale, rules, and spacing when the real font cannot ship.
-- Usually keep three or fewer visible type voices: primary reading, display contrast, and optional data/label voice. More is a composition judgment, not a schema failure.
+- Usually keep the main reading voice, display contrast, and any purposeful data or label voice visibly related. Additional voices or variants are a composition judgment, not a schema failure.
 - Give only one phrase per viewport display-level weight. Section titles support it; they do not compete with it.
 - Use weight and spacing before adding a colored container. A section does not need a card to become a section.
 - Reserve monospace-like treatment for codes, dates, counts, coordinates, or technical labels. Do not set narrative Chinese body copy as pseudo-terminal text.
@@ -47,10 +47,10 @@ Every visible role root uses `data-type-role` and explicit or inherited font sta
 
 ## Line length and inset
 
-- Treat one line as the preferred mobile shape for `display` and `section` roles. The typography audit estimates their rendered width against a conservative 288px budget and reports `heading-wrap-risk` without blocking delivery.
-- Resolve a risky heading in this order: shorten the visible phrase; move qualifiers into a deck; reduce its size while preserving hierarchy; then reclaim unnecessary heading inset. Keep the full official title in article metadata when the visible display phrase is shortened.
+- Treat one line as a preferred mobile shape for `display` and `section` roles when it preserves the article's voice. The typography audit estimates rendered width against a conservative 288px budget and reports `heading-wrap-risk` as a review prompt, not an optimization target.
+- Resolve a risky heading by judging wording, semantic breaks, type scale, usable width, and the surrounding composition together. Do not compress a distinctive title into generic copy merely to clear the estimate. Keep the full official title in article metadata when the visible display phrase is intentionally shortened.
 - Never apply `white-space:nowrap` to text that does not demonstrably fit at 320px in the real editor. Preventing wrap by causing clipping or horizontal overflow is a failed layout.
-- If the meaning cannot fit on one line, use at most two intentionally balanced lines at a semantic boundary. Avoid a final line containing only one or two Chinese characters. An explicit `<br>` produces a review warning because it must be checked against the final copy.
+- A deliberately balanced two-line title is valid when it better preserves voice, meaning, or visual rhythm. Break at a semantic boundary and avoid a final line containing only one or two Chinese characters. An explicit `<br>` produces a review warning because it must be checked against the final copy.
 - Use one stable outer baseline, usually `8px`, and one reading inset, usually `18-22px`.
 - Standard body copy should not be squeezed into decorative narrow columns on mobile.
 - A quote, caption, or data note may use a narrower inset when that contrast is intentional.
@@ -64,7 +64,7 @@ Every visible role root uses `data-type-role` and explicit or inherited font sta
 - Caption after media: usually `8-12px`.
 - Dense fact rows: `14-18px` internal vertical padding with neutral dividers.
 - Follow a dense list with open prose, a media pause, or a larger section break. Do not repeat equal card gaps through the whole article.
-- Treat those values as a semantic scale, not a metronome. Distance should grow from same-thought grouping to continuation, turn, chapter, and closing pause.
+- Treat those values as a semantic scale, not a metronome. Distance should grow from same-thought grouping to continuation, turn, chapter, and closing pause. A repeated `data-spacing-role` may therefore have multiple values; `plan` records its sorted machine-readable scale instead of forcing one number everywhere.
 - Do not use a border, background, label, or card when spacing and type hierarchy already express the relationship.
 
 ## Emphasis budget
@@ -85,7 +85,7 @@ Before delivery:
 
 1. Read the article without color. The heading order and argument must remain clear.
 2. Check the longest title and section heading at 320px; prefer one line and inspect every `heading-wrap-risk` or `heading-forced-line-break` warning. Then check labels, contacts, and URLs.
-3. Run `audit_wechat_typography.py` with the READY JSON contract; body readability and post-freeze implementation mismatches block delivery, while non-body recommendation ranges remain warnings.
+3. Run `audit_wechat_typography.py` with the READY JSON contract; body readability, unknown role implementations, and post-freeze variants absent from the contract block delivery, while non-body recommendation ranges remain warnings.
 4. Confirm only marked continuous-prose paragraphs use the recorded first-line indent; all other content and containers use `0`, with no manual-space indentation.
 5. Confirm labels are meaningful, body tracking is zero, and any display tracking remains legible.
 6. Confirm no body paragraph is centered, boxed, or tinted solely for decoration.

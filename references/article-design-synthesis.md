@@ -40,7 +40,7 @@ Read `design-grammar.md`. Evaluate every normalized dimension against the conten
 7. **Image behavior** - evidence frame, full-width pause, portrait study, contact sheet, object sequence, or no image.
 8. **Recurring motif** - derive it from the article's subject, never from a generic style label.
 9. **Closing device** - resolve the argument, ownership, or action without repeating the opener.
-10. **Compatibility behavior** - the readable static state, likely editor risks, and fallback for each conditional technique.
+10. **Atmosphere and compatibility behavior** - how place, season, material, pacing, or emotional transition enters the design; the readable static state, likely editor risks, and fallback for each conditional technique.
 
 The living grammar contains only normalized design decisions, not source records. Normal generation must not reconstruct a source catalog or pick a source winner.
 
@@ -55,14 +55,14 @@ Record all of the following:
 | Exploration | Direction names and theses, signature moves, compatibility risks, selected direction, and selection reason |
 | Editorial and evidence | Reader situation, central friction, judgment, reader gain, source facts, evidence boundary, and desired action |
 | Composition | Module manifest, one dominant module, reading order, widths, outer baseline, content inset, density curve, and semantic spacing scale |
-| Typography | Every used `data-type-role` with font stack, size, line height, weight, alignment, letter spacing, and machine-parseable wrapping; also record role relationships, body paragraph gap, and the default `2em` first-line indent or its exception. Only continuous prose carries `data-indent-role="body-paragraph"`. |
+| Typography | Every used HTML `data-type-role` with one or more observed font-stack, size, line-height, weight, alignment, letter-spacing, and machine-parseable wrapping variants; also record role relationships, body paragraph rhythm, and the default `2em` first-line indent or its exception. Only continuous prose carries `data-indent-role="body-paragraph"`. SVG coordinate text is outside this role contract. |
 | Color | Exact hex values for field, ink, primary signal, secondary signal, correction, and image-derived support; state where each is allowed and how contrast survives without effects |
 | Media | Each asset's reader job, factual authority, order, crop or aspect behavior, caption/source need, and placeholder or hosted state |
 | Geometry and motif | Primary edge language, radius policy, dividers, surface behavior, content-native motif, recurrence limit, and exceptions |
-| Effects and motion | Select `none`, static expressive CSS, or SVG/SMIL; state the semantic job, static first state, fallback, compatibility risk, and exact-fragment test obligation |
+| Effects and motion | Select `none`, static expressive CSS, or SVG/SMIL; state the editorial job, including explanation, atmosphere, pacing, emotional transition, or world-building where relevant, plus the static first state, fallback, compatibility risk, and exact-fragment test obligation |
 | Delivery | Backend readiness result, draft or local-preview target, must-keep decisions, avoid decisions, fallback, and stop condition |
 
-Machine relationships are explicit in HTML markers. Give modules `data-module-id` and `data-density`; mark one horizontal-padding implementation each for `data-layout-role="outer-baseline"` and `"content-inset"`; identify semantic spacing and geometry with `data-spacing-role` and `data-geometry-role`; and place `data-type-role` on visible text-role roots. Mark only continuous prose paragraphs with `data-indent-role="body-paragraph"`; every unmarked role and container uses `text-indent:0`. Each media record still requires authored authority and reader-job metadata; body placements use the same `data-media-id` and a machine-readable `data-media-crop`. A real caption follows the image with `data-caption-for`. During `plan`, the parser writes the implemented module order, density, dimensions, fixed widths, spacing values, geometry declarations, typography values, prose indent, palette membership, media order/crops/captions, and effect kind into the contract. The release command generates `checks.fragment_sha256` so later unverified edits invalidate the relationship.
+Machine relationships are explicit in HTML markers. Give modules `data-module-id` and `data-density`; mark one horizontal-padding implementation each for `data-layout-role="outer-baseline"` and `"content-inset"`; identify representative semantic spacing and important recurring geometry with `data-spacing-role` and `data-geometry-role`; and place `data-type-role` on visible HTML text-role roots. A spacing role may contain several pixel values when they form a deliberate density scale, and a text role may contain several observed variants when their relationship is intentional. SVG coordinate text uses native SVG typography without an HTML type role. Mark only continuous prose paragraphs with `data-indent-role="body-paragraph"`; every unmarked role and container uses `text-indent:0`. Each media record still requires authored authority and reader-job metadata; body placements use the same `data-media-id` and a machine-readable `data-media-crop`. A real caption follows the image with `data-caption-for`. During `plan`, the parser writes the implemented module order, density, dimensions, fixed widths, spacing scales, descriptive geometry observations, typography variants, prose indent, palette membership, media order/crops/captions, and effect kind into the contract. The release command generates `checks.fragment_sha256` so later unverified edits invalidate the relationship.
 
 Typography and color require actual values, not adjectives such as "large", "airy", "warm", or "high contrast". Layout requires explicit relationships, not a component name. Effects require a decision even when the answer is `none`; the contract never creates a quota for decoration.
 
@@ -84,7 +84,7 @@ Safety, factual-integrity, WeChat-compatibility, width, body-readability, and pu
 - Removing gradients, shadows, and decorative marks preserves reading order and action.
 - Without an explicit close-reference request, the result differs meaningfully from recognizable references or prior articles instead of merely replacing their copy.
 - No finite theme catalog, source theme name, or theme selector is used to generate the design contract.
-- The final fragment implements the recorded type values, palette roles, spacing relationships, media behavior, effects decision, and fallback without unrecorded decoration.
+- The final fragment preserves the recorded type relationships, palette roles, spacing scales, media behavior, effects decision, and fallback. The exact fragment digest binds authored decorative detail; the contract describes its system instead of enumerating every CSS declaration.
 
 If no close-reference request exists and the result still looks like one reference page or prior article with new copy, revise the contract before writing or delivering HTML.
 

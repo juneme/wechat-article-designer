@@ -504,6 +504,12 @@ def _uniform_number(values: list[float | None], label: str) -> float:
     return concrete[0]
 
 
+def _number_scale(values: list[float | None], label: str) -> list[float]:
+    if not values or any(value is None for value in values):
+        raise WorkspaceError(f"cannot extract {label} from the selected fragment")
+    return sorted({float(value) for value in values if value is not None})
+
+
 def _extract_typography(
     fragment: str,
 ) -> tuple[dict[str, dict[str, Any]], float | None]:
@@ -525,7 +531,11 @@ def _extract_typography(
                 )
 
     for node in parser.nodes:
-        if node.explicit_role is None or not "".join(node.text).strip():
+        if (
+            node.explicit_role is None
+            or node.inside_svg
+            or not "".join(node.text).strip()
+        ):
             continue
         style = node.style
         size = _number_unit(style.get("font-size"), "px")
@@ -604,11 +614,11 @@ def _extract_typography(
     body_indents: list[float] = []
     for role, records in observed.items():
         first_values = records[0][0]
-        if any(values != first_values for values, _, _ in records[1:]):
-            raise WorkspaceError(
-                f"typography role {role!r} uses conflicting implementation values"
-            )
-        roles[role] = first_values
+        variants: list[dict[str, Any]] = []
+        for values, _, _ in records:
+            if values not in variants:
+                variants.append(values)
+        roles[role] = {**first_values, "variants": variants}
         if role == "body":
             body_indents.extend(
                 indent for _, indent, is_body_paragraph in records if is_body_paragraph
@@ -777,6 +787,7 @@ def _extract_selected_implementation(
         )
     layout["fixed_widths_px"] = sorted(parser.fixed_widths)
     layout["used_spacing_roles"] = list(parser.spacing)
+    spacing_scales: dict[str, list[float]] = {}
     for role, markers in parser.spacing.items():
         if role not in SPACING_RULES:
             continue
@@ -792,7 +803,10 @@ def _extract_selected_implementation(
                 )
             else:
                 values.append(_side(style, property_name, side))
-        layout[key] = _uniform_number(values, role)
+        scale = _number_scale(values, role)
+        spacing_scales[role] = scale
+        layout[key] = scale[len(scale) // 2]
+    layout["spacing_scales_px"] = spacing_scales
     if not str(layout.get("alignment_behavior", "")).strip():
         layout["alignment_behavior"] = (
             "Alignment behavior is machine-extracted from the selected typography roles."
@@ -803,7 +817,8 @@ def _extract_selected_implementation(
     if body_indent is not None:
         candidate["typography"]["body_first_line_indent_em"] = body_indent
     candidate["typography"]["role_relationships"] = "; ".join(
-        f"{role} {values['font_size_px']:g}px/{values['line_height']:g}"
+        f"{role} {values['font_size_px']:g}px/{values['line_height']:g} "
+        f"({len(values.get('variants', []))} observed variant(s))"
         for role, values in roles.items()
     )
 
@@ -827,11 +842,13 @@ def _extract_selected_implementation(
         "content-native-motif": "content_native_motif",
     }
     for role, key in geometry_fields.items():
-        geometry[key] = (
-            f"Machine-extracted from data-geometry-role={role}."
-            if role in parser.geometry
-            else f"N/A: the selected HTML does not use {role}."
-        )
+        current = str(geometry.get(key, "")).strip()
+        if role in parser.geometry and (
+            not current or re.match(r"^(?:N/A|none)\s*:", current, re.IGNORECASE)
+        ):
+            geometry[key] = f"Observed at data-geometry-role={role}; see the selected HTML."
+        elif not current:
+            geometry[key] = f"N/A: the selected HTML does not mark {role}."
     geometry["recurrence_limit"] = (
         f"The selected HTML contains {sum(len(items) for items in parser.geometry.values())} "
         "geometry-role marker(s)."
@@ -856,7 +873,10 @@ def _extract_selected_implementation(
     effects["kind"] = effect_kind
     if effect_kind != "none":
         defaults = {
-            "semantic_job": "Support the selected article hierarchy.",
+            "semantic_job": (
+                "Support the selected hierarchy, atmosphere, pacing, emotional "
+                "transition, or narrative world."
+            ),
             "static_state": "Essential content is visible in the initial rendered state.",
             "fallback": "Retain readable single-column content when the effect is stripped.",
             "compatibility_risk": "The WeChat editor may simplify conditional presentation.",

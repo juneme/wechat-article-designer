@@ -144,6 +144,23 @@ def _indent_em(value: str | None, font_size: float | None) -> float | None:
     return pixels / font_size if pixels is not None and font_size else None
 
 
+def _normalized_contract_variant(value: dict[str, Any]) -> dict[str, Any]:
+    stack = value.get("font_stack")
+    return {
+        "font_stack": (
+            [str(item).casefold() for item in stack]
+            if isinstance(stack, list)
+            else stack
+        ),
+        "font_size_px": value.get("font_size_px"),
+        "line_height": value.get("line_height"),
+        "font_weight": value.get("font_weight"),
+        "alignment": str(value.get("alignment", "")).casefold(),
+        "letter_spacing_px": value.get("letter_spacing_px"),
+        "wrap": str(value.get("wrap", "")).casefold(),
+    }
+
+
 def _estimated_text_width(
     value: str, font_size: float, letter_spacing: float
 ) -> float:
@@ -178,6 +195,7 @@ class _Node:
         role: str | None,
         explicit_role: str | None,
         indent_role: str | None,
+        inside_svg: bool,
     ) -> None:
         self.tag = tag
         self.line = line
@@ -186,6 +204,7 @@ class _Node:
         self.role = role
         self.explicit_role = explicit_role
         self.indent_role = indent_role
+        self.inside_svg = inside_svg
         self.text: list[str] = []
         self.has_break = False
 
@@ -216,6 +235,7 @@ class TypographyParser(HTMLParser):
         inherited_style.update(declared_style)
         explicit_role = attributes.get("data-type-role")
         role = explicit_role or (self.stack[-1].role if self.stack else None)
+        inside_svg = tag == "svg" or any(node.inside_svg for node in self.stack)
         node = _Node(
             tag=tag,
             line=self.getpos()[0] + self.line_offset,
@@ -224,6 +244,7 @@ class TypographyParser(HTMLParser):
             role=role,
             explicit_role=explicit_role,
             indent_role=attributes.get("data-indent-role"),
+            inside_svg=inside_svg,
         )
         self.nodes.append(node)
         if tag not in VOID_TAGS:
@@ -247,7 +268,10 @@ class TypographyParser(HTMLParser):
             return
         for node in self.stack:
             node.text.append(data)
-        if data.strip() and (not self.stack or self.stack[-1].role is None):
+        if data.strip() and (
+            not self.stack
+            or (self.stack[-1].role is None and not self.stack[-1].inside_svg)
+        ):
             self.missing_role_lines.add(self.getpos()[0] + self.line_offset)
 
 
@@ -313,7 +337,7 @@ def audit_html(
         )
 
     for node in parser.nodes:
-        if node.explicit_role is None:
+        if node.explicit_role is None or node.inside_svg:
             continue
         visible = "".join(node.text)
         if not visible.strip():
@@ -330,55 +354,46 @@ def audit_html(
         planned = roles[role]
         style = node.style
         actual_size = _number_unit(style.get("font-size"), "px")
-        planned_size = float(planned["font_size_px"])
-        if actual_size is None or abs(actual_size - planned_size) > 0.01:
-            _add(
-                findings,
-                "font-size-contract-mismatch",
-                node.line,
-                f"Role {role} requires {planned_size:g}px; found {style.get('font-size')!r}.",
-            )
-
         actual_leading = _line_height(style.get("line-height"), actual_size)
-        planned_leading = float(planned["line_height"])
-        if actual_leading is None or abs(actual_leading - planned_leading) > 0.01:
-            _add(
-                findings,
-                "line-height-contract-mismatch",
-                node.line,
-                f"Role {role} requires {planned_leading:g}; found {style.get('line-height')!r}.",
-            )
-
         actual_weight = _font_weight(style.get("font-weight"))
-        if actual_weight != planned["font_weight"]:
-            _add(
-                findings,
-                "font-weight-contract-mismatch",
-                node.line,
-                f"Role {role} requires weight {planned['font_weight']}; found {style.get('font-weight')!r}.",
-            )
-
-        if (style.get("text-align") or "").lower() != planned["alignment"]:
-            _add(
-                findings,
-                "alignment-contract-mismatch",
-                node.line,
-                f"Role {role} requires {planned['alignment']} alignment; found {style.get('text-align')!r}.",
-            )
-
         actual_tracking = (
             0.0
             if _zero_px(style.get("letter-spacing"))
             else _number_unit(style.get("letter-spacing"), "px")
         )
-        planned_tracking = float(planned["letter_spacing_px"])
-        if actual_tracking is None or abs(actual_tracking - planned_tracking) > 0.01:
+
+        actual_variant = {
+            "font_stack": _font_stack(style.get("font-family")),
+            "font_size_px": actual_size,
+            "line_height": actual_leading,
+            "font_weight": actual_weight,
+            "alignment": (style.get("text-align") or "").lower(),
+            "letter_spacing_px": actual_tracking,
+            "wrap": next(
+                (
+                    f"{name}:{style[name]}".casefold()
+                    for name in ("overflow-wrap", "word-break", "white-space")
+                    if style.get(name)
+                ),
+                None,
+            ),
+        }
+        planned_variants = planned.get("variants")
+        if not isinstance(planned_variants, list) or not planned_variants:
+            planned_variants = [
+                {key: value for key, value in planned.items() if key != "variants"}
+            ]
+        normalized_variants = [
+            _normalized_contract_variant(item)
+            for item in planned_variants
+            if isinstance(item, dict)
+        ]
+        if actual_variant not in normalized_variants:
             _add(
                 findings,
-                "letter-spacing-contract-mismatch",
+                "typography-variant-contract-mismatch",
                 node.line,
-                f"Role {role} requires {planned_tracking:g}px letter spacing; "
-                f"found {style.get('letter-spacing')!r}.",
+                f"Role {role} does not match any machine-recorded typography variant.",
             )
 
         if role in SINGLE_LINE_HEADING_ROLES and actual_size is not None:
@@ -392,9 +407,9 @@ def audit_html(
                     findings,
                     "heading-forced-line-break",
                     node.line,
-                    f"Role {role} contains an explicit line break. Prefer a single-line "
-                    "mobile heading; keep two deliberate lines only when the full meaning "
-                    "cannot fit after editing.",
+                    f"Role {role} contains an explicit line break. Review the final "
+                    "composition at 320px; a balanced two-line heading is valid when it "
+                    "preserves voice, meaning, and visual rhythm.",
                     severity="warning",
                 )
             elif estimated_width > SINGLE_LINE_HEADING_BUDGET_PX:
@@ -404,29 +419,10 @@ def audit_html(
                     node.line,
                     f"Role {role} is estimated at {estimated_width:.0f}px against a "
                     f"{SINGLE_LINE_HEADING_BUDGET_PX:.0f}px mobile heading budget. "
-                    "Shorten the visible heading, adjust its type or usable width, and "
-                    "avoid nowrap overflow.",
+                    "Review its wording, type, usable width, and line balance in the final "
+                    "composition; avoid nowrap overflow.",
                     severity="warning",
                 )
-
-        planned_stack = [str(item).casefold() for item in planned["font_stack"]]
-        if _font_stack(style.get("font-family")) != planned_stack:
-            _add(
-                findings,
-                "font-stack-contract-mismatch",
-                node.line,
-                f"Role {role} font-family does not match its contract font_stack.",
-            )
-
-        wrap = str(planned["wrap"])
-        property_name, expected = wrap.split(":", 1)
-        if style.get(property_name.strip().lower(), "").lower() != expected.strip().lower():
-            _add(
-                findings,
-                "wrap-contract-mismatch",
-                node.line,
-                f"Role {role} requires {wrap}; implementation differs.",
-            )
 
         is_body_paragraph = node.indent_role == "body-paragraph"
         if node.indent_role is not None and not is_body_paragraph:

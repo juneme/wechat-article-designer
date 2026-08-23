@@ -37,7 +37,7 @@ The directory name is safe on Windows. A repeated title receives a numeric suffi
 ## Work in one source of truth
 
 - Write candidate and selected publishable HTML in `fragment.html`, inside the two boundary comments. Exploration may happen before the first `plan`; this is the intended way to compare real compositions instead of freezing guesses.
-- Edit factual, editorial, media-authority, delivery, and exploration decisions in `design-contract.json` while its status is `EXPLORING`. After selecting the implementation, run `plan`: it extracts machine-observable design values, sets `PLANNED`, and regenerates `design-contract.md`. The release command alone sets `READY` and generates `checks.fragment_sha256`; never fill that binding manually or edit generated Markdown.
+- Edit factual, editorial, media-authority, delivery, and exploration decisions in `design-contract.json` while its status is `EXPLORING`. After selecting the implementation, run `plan`: it extracts machine-observable design values, including typography variants and semantic spacing scales, while retaining authored geometry descriptions; then it sets `PLANNED` and regenerates `design-contract.md`. The release command alone sets `READY` and generates `checks.fragment_sha256`; never fill that binding manually or edit generated Markdown.
 - Store local source images in `assets/`; final body image URLs still come from the console server.
 - Edit title, author, digest, comment flags, and cover `media_id` in `article.json`.
 - Treat `preview.html` as generated fallback output. It is created for the local-preview route and intentionally has no clipboard controls or scripts.

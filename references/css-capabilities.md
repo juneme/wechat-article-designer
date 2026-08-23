@@ -12,7 +12,7 @@ Every new full article and substantial redesign records one of these implementat
 |---|---|
 | `none` | Type, spacing, color, rules, and media already carry the reading job |
 | Static expressive CSS | A gradient, shadow, outline, transform, or related treatment materially supports hierarchy and has a readable solid fallback |
-| SVG/SMIL | Motion or vector composition materially clarifies a sequence, comparison, reveal, state change, or emphasis and follows `svg-design-genes.md` |
+| SVG/SMIL | Motion or vector composition materially supports explanation, atmosphere, pacing, emotional transition, seasonal change, narrative world-building, or emphasis and follows `svg-design-genes.md` |
 
 The decision is mandatory; an effect is not. The `plan` command derives the outcome from the selected HTML. Record or retain the semantic job, static state, fallback, compatibility risk, and test obligation. Do not add a technique merely because it is available.
 
@@ -32,7 +32,7 @@ Tables are excluded from visual layout. Use a table only when the content is tru
 
 ## Selection rules
 
-Use any allowed capability when it materially supports the article's visual thesis. Institutional, evidence-heavy, and service content may still use expressive treatments; poetic or promotional content may still be restrained. Risk follows the declaration and fallback, not an article label.
+Use any allowed capability when it materially supports the article's visual thesis. Institutional, evidence-heavy, and service content may still use expressive treatments; poetic or promotional content may still be restrained. Atmosphere and emotional pacing are valid editorial jobs, not decoration by definition. Risk follows the declaration and fallback, not an article label.
 
 For every nonessential effect:
 
@@ -42,7 +42,7 @@ For every nonessential effect:
 4. test final content rather than a demonstration string;
 5. report unverified editor behavior as a warning for the user's final draft review.
 
-Use as many supporting signals as the composition genuinely needs, but keep each one purposeful. Repetition, rhythm, and visual peaks should come from the article rather than a fixed effect quota.
+Use as many supporting signals and SVG scenes as the composition genuinely needs, but give each one a distinct job. Repetition, rhythm, atmosphere, and visual peaks should come from the article rather than a fixed effect quota.
 
 ## Fragile patterns
 
@@ -71,7 +71,7 @@ Reserve stable dimensions so replacement images do not shift the layout. For man
 
 ### SVG editorial components
 
-Use SVG for a clear editorial job and keep its first frame meaningful. Essential facts, qualifiers, deadlines, contacts, and actions belong in the initial state or surrounding HTML. Follow `svg-design-genes.md`; no separate SVG validation workflow or duplicate fallback wrapper is needed.
+Use SVG for a clear editorial job and keep its first frame meaningful. Atmospheric jobs such as wind, drifting leaves, birds, steam, light, and seasonal transition are valid when they establish place or pace instead of obscuring copy. Essential facts, qualifiers, deadlines, contacts, and actions belong in the initial state or surrounding HTML. Follow `svg-design-genes.md`; no separate SVG validation workflow or duplicate fallback wrapper is needed.
 
 ## Release behavior
 

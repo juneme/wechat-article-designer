@@ -4,14 +4,14 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 
 ## Core thesis
 
-- Treat SVG as an editorial micro-interaction, not as the article's layout system.
-- Give each SVG one semantic job: reveal, compare, trace, emphasize, transform, or cycle.
+- Treat SVG as an editorial scene or micro-interaction, not as the article's layout system.
+- Give each SVG one primary editorial job: reveal, compare, trace, emphasize, transform, establish atmosphere, pace a transition, or build a seasonal narrative world.
 - Keep essential facts and actions understandable in the SVG's initial state or the surrounding article prose. Do not require a duplicated fallback component.
-- Use motion to clarify sequence or state. Do not add continuous movement when it does not improve understanding.
+- Use motion to clarify sequence or state, or to create a content-specific sense of air, light, material, weather, distance, or time. Ambient movement is valid when its pace supports reading and its absence does not erase meaning.
 
 ## Construction grammar
 
-- Use one responsive outer `svg` with a mobile-first `viewBox`, normally `0 0 360 H`, and `style="display:block;width:100%;height:auto;margin:0;"`.
+- Use one responsive outer `svg` per scene with a mobile-first `viewBox`, normally `0 0 360 H`, and `style="display:block;width:100%;height:auto;margin:0;"`. Values such as `width="360"` on inner SVG geometry are viewBox coordinates, not CSS pixels; the rendered outer width remains within the 320px article column.
 - Use inline presentation attributes, simple geometry, direct SVG text, solid fills, and unique element IDs.
 - Add `role="img"`, a concise `title`, and a `desc` that explains the visible behavior without depending on it.
 - Keep the SVG free of scripts, event attributes, `foreignObject`, external styles, and web fonts.
@@ -28,6 +28,7 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 | Horizontal sequence | Translate an ordinary group with `animateTransform` | Do not move text with `textPath` |
 | Direction or shape change | Morph path `d` or polygon `points` | Replace rotation-dependent storytelling with explicit shape states |
 | Draw or pulse emphasis | Animate `stroke-dashoffset`, `stroke-dasharray`, or `stroke-opacity` on a solid stroke | Avoid gradient strokes |
+| Ambient atmosphere | Slowly translate, fade, or reshape a small number of leaves, birds, steam lines, light bands, rain marks, or related content-native forms | Keep the first frame composed and avoid motion that competes with reading |
 | Wipe reveal | Animate the width of an opaque cover rectangle | Do not use animated masks |
 | Aperture or expansion | Morph a visible path between compact and expanded shapes | Do not use animated `clipPath` |
 | Color movement | Animate solid fills across a small set of color bands | Do not depend on SVG gradients or animated gradient stops |
@@ -36,17 +37,17 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 
 ## Composition and pacing
 
-- Use at most one primary SVG behavior in an ordinary article.
+- Use one primary behavior per SVG scene. Multiple scenes are valid when each advances a different narrative beat and open reading space separates them; do not impose a scene-count quota.
 - Keep click feedback short and decisive; finish in a stable readable state with `fill="freeze"` when appropriate.
 - Keep ambient loops slow enough to read and make the first frame meaningful.
 - Repeat the first visual state at the end of a loop when a reset would otherwise flash or jump.
 - Keep moving labels short. Put paragraphs, evidence, and instructions in HTML rather than SVG text.
-- Prefer one dominant shape, one supporting label, and one restrained accent over a dense miniature poster.
+- Establish a clear focal relationship inside each scene. Quiet scenes may use one dominant shape; a deliberate miniature poster or layered landscape may use richer geometry when the mobile silhouette remains legible.
 
 ## Color and typography
 
-- Use two to four solid colors with sufficient text contrast; color cannot be the only state cue.
-- Use direct `text` elements with explicit `x`, `y`, and `fill`. Put a supported `data-type-role` and its contract-matching inline typography on every visible SVG text root; accessibility-only `title` and `desc` do not need a type role.
+- Use a coherent solid-color hierarchy with sufficient text contrast; there is no fixed color-count quota. Related shades, seasonal transitions, and image-derived colors are valid when field, ink, signal, and atmosphere remain distinguishable. Color cannot be the only state cue.
+- Use direct `text` elements with explicit `x`, `y`, `fill`, and concise native SVG `font-*` attributes. SVG coordinate text is not an HTML flow-text role and does not need `data-type-role`, paragraph wrapping, `text-indent`, or the full HTML typography signature. Accessibility-only `title` and `desc` need no visible typography.
 - Avoid `textPath`, filters, gradients, and font-dependent visual tricks.
 - Keep long Chinese copy in ordinary HTML so editor font substitution or fixed SVG coordinates cannot damage reading.
 
@@ -59,4 +60,4 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 
 ## Delivery boundary
 
-Components built from these genes use the standard article quality gates: content integrity, mobile width, typography, contrast, hosted assets, and draft validation. Do not add a separate SVG validation workflow. A genuinely new mechanism outside this vocabulary may be explored only when requested, and its working artifacts stay outside the Skill.
+Components built from these genes use the standard article quality gates: content integrity, rendered outer mobile width, contrast, hosted assets, and draft validation. SVG child geometry is audited as viewBox coordinates, while surrounding HTML remains under the normal typography contract. Do not add a separate SVG validation workflow. A genuinely new mechanism outside this vocabulary may be explored when it serves the article, and its working artifacts stay outside the Skill.

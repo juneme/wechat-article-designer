@@ -135,7 +135,21 @@ def audit_html(value: str) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
 
     for node in parser.nodes:
-        attribute_width = node.attributes.get("width")
+        # A numeric width attribute on an outer rendered image or SVG viewport is
+        # a CSS-pixel width. Inside SVG, width is normally a coordinate in the
+        # viewBox and must not be compared with the article column.
+        ancestor = node.parent
+        has_svg_ancestor = False
+        while ancestor is not None:
+            if ancestor.tag == "svg":
+                has_svg_ancestor = True
+                break
+            ancestor = ancestor.parent
+        attribute_width = (
+            node.attributes.get("width")
+            if node.tag == "img" or (node.tag == "svg" and not has_svg_ancestor)
+            else None
+        )
         if (
             node.style.get("width") is None
             and isinstance(attribute_width, str)
