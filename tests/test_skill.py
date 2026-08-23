@@ -29,6 +29,18 @@ import wechat_console_api
 def ready_contract(title: str, *, local_preview: bool = True) -> dict[str, object]:
     contract = design_contract.empty_contract(title, local_preview=local_preview)
     contract["status"] = "READY"
+    contract["exploration"] = {
+        "directions": [
+            {
+                "name": "Selected editorial direction",
+                "thesis": "Use hierarchy and rhythm derived from the article.",
+                "signature_move": "A clear dominant reading turn.",
+                "compatibility_risk": "Inspect conditional presentation in WeChat.",
+            }
+        ],
+        "selected_direction": "Selected editorial direction",
+        "selection_reason": "It best supports the verified argument and reading flow.",
+    }
     editorial = contract["editorial"]
     for key in (
         "reader",
@@ -89,6 +101,7 @@ def ready_contract(title: str, *, local_preview: bool = True) -> dict[str, objec
     contract["checks"] = {
         "editorial_passed": True,
         "design_values_verified": True,
+        "implementation_extracted": True,
         "fragment_sha256": "0" * 64,
     }
     return contract
@@ -102,11 +115,52 @@ def write_contract(workspace: Path, contract: dict[str, object]) -> None:
 
 
 def bind_workspace_fragment(workspace: Path, contract: dict[str, object]) -> None:
+    persisted = design_contract.load_contract(workspace / "design-contract.json")
     raw = (workspace / "fragment.html").read_text(encoding="utf-8")
     fragment = article_workspace._extract_fragment(raw)
-    contract["status"] = "READY"
-    contract["checks"]["fragment_sha256"] = design_contract.fragment_sha256(fragment)
+    persisted["status"] = "READY"
+    persisted["checks"]["fragment_sha256"] = design_contract.fragment_sha256(fragment)
+    contract.clear()
+    contract.update(persisted)
     write_contract(workspace, contract)
+
+
+def selected_fragment(
+    *,
+    body_text: str = "Verified article copy.",
+    display_text: str = "Selected title",
+) -> str:
+    family = "-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif"
+    return (
+        f"{article_workspace.START}\n"
+        '<section data-module-id="opening" data-density="open" '
+        'data-layout-role="outer-baseline" '
+        f'style="margin:0;padding:0 8px;background:#FFFFFF;color:#202020;'
+        f"font-family:{family};font-weight:400;text-align:left;letter-spacing:0;"
+        'text-indent:0;overflow-wrap:anywhere;">'
+        '<h1 data-type-role="display" style="margin:0;font-size:32px;line-height:1.3;'
+        'font-weight:700;text-align:left;letter-spacing:0;text-indent:0;'
+        f'overflow-wrap:anywhere;">{display_text}</h1></section>'
+        '<section data-module-id="body" data-density="dense" '
+        'data-layout-role="content-inset" data-spacing-role="section-gap" '
+        'style="margin:42px 0 0;padding:0 18px;background:#FFFFFF;color:#202020;'
+        f"font-family:{family};font-weight:400;text-align:left;letter-spacing:0;"
+        'text-indent:0;overflow-wrap:anywhere;">'
+        '<p data-type-role="body" data-indent-role="body-paragraph" '
+        'data-spacing-role="paragraph-gap" '
+        'style="margin:0 0 10px;padding:0;font-size:16px;line-height:1.9;'
+        'font-weight:400;text-align:left;letter-spacing:0;text-indent:2em;'
+        f'overflow-wrap:anywhere;">{body_text}</p></section>'
+        '<section data-module-id="closing" data-density="open" '
+        'data-spacing-role="section-gap" '
+        'style="margin:42px 0 0;padding:0;background:#FFFFFF;color:#202020;'
+        f"font-family:{family};font-weight:400;text-align:left;letter-spacing:0;"
+        'text-indent:0;overflow-wrap:anywhere;">'
+        '<p data-type-role="body" style="margin:0;font-size:16px;line-height:1.9;'
+        'font-weight:400;text-align:left;letter-spacing:0;text-indent:0;'
+        'overflow-wrap:anywhere;">Closing copy.</p></section>'
+        f"\n{article_workspace.END}\n"
+    )
 
 
 class ContractTests(unittest.TestCase):
@@ -126,6 +180,13 @@ class ContractTests(unittest.TestCase):
         contract["typography"]["roles"]["body"]["font_size_px"] = 14
         with self.assertRaises(design_contract.ContractError):
             design_contract.validate_contract(contract, required_status="READY")
+
+    def test_non_body_typography_outside_recommendation_is_a_warning(self) -> None:
+        contract = ready_contract("Test")
+        contract["typography"]["roles"]["display"]["font_size_px"] = 48
+        design_contract.validate_contract(contract, required_status="READY")
+        codes = {item["code"] for item in design_contract.contract_warnings(contract)}
+        self.assertIn("typography-recommended-range", codes)
 
     def test_na_without_reason_is_rejected(self) -> None:
         contract = ready_contract("Test")
@@ -152,13 +213,14 @@ class ArticleAuditTests(unittest.TestCase):
         )
         self.assertIn("text-contrast", {item["code"] for item in findings})
 
-    def test_gradient_contrast_requires_recorded_manual_review(self) -> None:
+    def test_gradient_contrast_is_a_warning_with_optional_acknowledgment(self) -> None:
         contract = ready_contract("Test")
         html = (
             '<p style="color:#FFFFFF;background:linear-gradient(#202020,#FFFFFF);">text</p>'
         )
         findings = audit_wechat_contrast.audit_html(html, contract)
-        self.assertEqual(findings[0]["severity"], "error")
+        self.assertEqual(findings[0]["severity"], "warning")
+        self.assertFalse(findings[0]["acknowledged"])
         contract["exceptions"] = [
             {"code": "contrast-manual-review", "reason": "Confirmed in phone preview."}
         ]
@@ -191,7 +253,8 @@ class ArticleAuditTests(unittest.TestCase):
         good = (
             f'<section style="font-family:{family};font-weight:400;text-align:left;'
             'letter-spacing:0;overflow-wrap:anywhere;text-indent:0;">'
-            '<p data-type-role="body" style="font-size:16px;line-height:1.9;'
+            '<p data-type-role="body" data-indent-role="body-paragraph" '
+            'style="font-size:16px;line-height:1.9;'
             'text-indent:2em;">正文内容。</p></section>'
         )
         self.assertEqual(audit_wechat_typography.audit_html(good, contract), [])
@@ -211,6 +274,81 @@ class ArticleAuditTests(unittest.TestCase):
         }
         self.assertIn("manual-space-indentation", double_codes)
         self.assertNotIn("first-line-indent-contract-mismatch", double_codes)
+
+        body_styled_non_prose = (
+            f'<p data-type-role="body" style="font-family:{family};font-size:16px;'
+            'line-height:1.9;font-weight:400;text-align:left;letter-spacing:0;'
+            'overflow-wrap:anywhere;text-indent:0;">Interview answer.</p>'
+        )
+        self.assertEqual(
+            audit_wechat_typography.audit_html(body_styled_non_prose, contract), []
+        )
+        wrongly_indented = body_styled_non_prose.replace(
+            "text-indent:0", "text-indent:2em"
+        )
+        self.assertIn(
+            "first-line-indent-contract-mismatch",
+            {
+                item["code"]
+                for item in audit_wechat_typography.audit_html(
+                    wrongly_indented, contract
+                )
+            },
+        )
+
+        container_indent = good.replace(
+            "overflow-wrap:anywhere;text-indent:0;",
+            "overflow-wrap:anywhere;text-indent:2em;",
+            1,
+        )
+        self.assertIn(
+            "container-indent-not-allowed",
+            {
+                item["code"]
+                for item in audit_wechat_typography.audit_html(
+                    container_indent, contract
+                )
+            },
+        )
+
+        tracked_contract = ready_contract("Test")
+        tracked_contract["typography"]["roles"]["display"]["letter_spacing_px"] = 1
+        tracked = (
+            f'<h1 data-type-role="display" style="font-family:{family};font-size:32px;'
+            'line-height:1.3;font-weight:700;text-align:left;letter-spacing:1px;'
+            'overflow-wrap:anywhere;text-indent:0;">Tracked title</h1>'
+        )
+        self.assertNotIn(
+            "letter-spacing-contract-mismatch",
+            {
+                item["code"]
+                for item in audit_wechat_typography.audit_html(
+                    tracked, tracked_contract
+                )
+            },
+        )
+
+        long_heading = tracked.replace(
+            "Tracked title", "这是一个在移动端容易发生自然换行的大标题"
+        )
+        heading_findings = audit_wechat_typography.audit_html(
+            long_heading, tracked_contract
+        )
+        wrap_risk = next(
+            item for item in heading_findings if item["code"] == "heading-wrap-risk"
+        )
+        self.assertEqual(wrap_risk["severity"], "warning")
+
+        forced_break = tracked.replace("Tracked title", "Short<br>title")
+        break_findings = audit_wechat_typography.audit_html(
+            forced_break, tracked_contract
+        )
+        forced = next(
+            item
+            for item in break_findings
+            if item["code"] == "heading-forced-line-break"
+        )
+        self.assertEqual(forced["severity"], "warning")
 
     def test_markup_rejects_active_html_keyframes_and_local_images(self) -> None:
         contract = ready_contract("Test")
@@ -235,6 +373,27 @@ class ArticleAuditTests(unittest.TestCase):
             }
             <= codes
         )
+
+    def test_conditional_css_is_a_warning_without_a_mode_or_exception(self) -> None:
+        contract = ready_contract("Test")
+        value = (
+            f"{audit_wechat_markup.START}\n"
+            '<section style="display:flex;"></section>'
+            f"\n{audit_wechat_markup.END}\n"
+        )
+        findings = audit_wechat_markup.audit_html(value, contract)
+        conditional = next(
+            item for item in findings if item["code"] == "conditional-css-editor-test"
+        )
+        self.assertEqual(conditional["severity"], "warning")
+        self.assertFalse(conditional["acknowledged"])
+
+    def test_published_instructions_contain_no_design_mode_split(self) -> None:
+        paths = [SKILL_ROOT / "SKILL.md", SKILL_ROOT / "README.md"]
+        paths.extend((SKILL_ROOT / "references").glob("*.md"))
+        paths.extend((SKILL_ROOT / "scripts").glob("*.py"))
+        combined = "\n".join(path.read_text(encoding="utf-8") for path in paths)
+        self.assertNotRegex(combined, r"(?i)\b(?:creative|steady)\b")
 
     def test_draft_validator_uses_markup_hard_rules(self) -> None:
         with self.assertRaises(wechat_console_api.ConsoleApiError):
@@ -415,6 +574,7 @@ class WorkspaceTests(unittest.TestCase):
         contract["status"] = "PLANNED"
         contract["checks"]["fragment_sha256"] = ""
         write_contract(workspace, contract)
+        (workspace / "fragment.html").write_text(selected_fragment(), encoding="utf-8")
         article_workspace.record_plan(workspace)
         bind_workspace_fragment(workspace, contract)
         return workspace
@@ -433,13 +593,16 @@ class WorkspaceTests(unittest.TestCase):
                 Path(temp), "Stage Gates", date(2026, 8, 22), local_preview=True
             )
             workspace = Path(result["article_dir"])
-            with self.assertRaises(design_contract.ContractError):
+            with self.assertRaises(article_workspace.WorkspaceError):
                 article_workspace.record_plan(workspace)
 
             contract = ready_contract("Stage Gates")
-            contract["status"] = "PLANNED"
+            contract["status"] = "EXPLORING"
+            contract["checks"]["design_values_verified"] = False
+            contract["checks"]["implementation_extracted"] = False
             contract["checks"]["fragment_sha256"] = ""
             write_contract(workspace, contract)
+            (workspace / "fragment.html").write_text(selected_fragment(), encoding="utf-8")
             planned = article_workspace.record_plan(workspace)
             self.assertTrue(planned["changed"])
             with self.assertRaises(design_contract.ContractError):
@@ -449,7 +612,7 @@ class WorkspaceTests(unittest.TestCase):
             synced = article_workspace.sync_workspace(workspace)
             self.assertTrue(synced["changed"])
 
-    def test_first_plan_rejects_html_written_before_design_gate(self) -> None:
+    def test_plan_extracts_and_freezes_a_selected_html_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             result = article_workspace.create_workspace(
                 Path(temp), "Plan Order", date(2026, 8, 23), local_preview=True
@@ -460,12 +623,25 @@ class WorkspaceTests(unittest.TestCase):
             contract["checks"]["fragment_sha256"] = ""
             write_contract(workspace, contract)
             (workspace / "fragment.html").write_text(
-                f"{article_workspace.START}\n<section>implemented early</section>\n"
-                f"{article_workspace.END}\n",
+                selected_fragment(
+                    display_text="这是一个在移动端容易发生自然换行的大标题"
+                ),
                 encoding="utf-8",
             )
-            with self.assertRaises(article_workspace.WorkspaceError):
-                article_workspace.record_plan(workspace)
+            result = article_workspace.record_plan(workspace)
+            self.assertTrue(result["changed"])
+            self.assertIn(
+                "heading-wrap-risk", {item["code"] for item in result["warnings"]}
+            )
+            planned = design_contract.load_contract(workspace / "design-contract.json")
+            self.assertEqual(planned["status"], "PLANNED")
+            self.assertEqual(
+                planned["editorial"]["module_sequence"],
+                ["opening", "body", "closing"],
+            )
+            self.assertEqual(planned["typography"]["body_first_line_indent_em"], 2.0)
+            self.assertTrue(planned["checks"]["implementation_extracted"])
+            self.assertNotIn("mode", planned["delivery"])
 
     def test_schema_three_workspace_and_contract_two_can_migrate(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -493,7 +669,7 @@ class WorkspaceTests(unittest.TestCase):
             migrated_contract = design_contract.load_contract(
                 workspace / "design-contract.json"
             )
-            self.assertEqual(migrated_contract["schema_version"], 3)
+            self.assertEqual(migrated_contract["schema_version"], 4)
             design_contract.validate_contract(
                 migrated_contract, required_status="READY"
             )
@@ -527,7 +703,7 @@ class WorkspaceTests(unittest.TestCase):
             migrated_contract = design_contract.load_contract(
                 workspace / "design-contract.json"
             )
-            self.assertEqual(migrated_contract["status"], "INCOMPLETE")
+            self.assertEqual(migrated_contract["status"], "EXPLORING")
             self.assertEqual(migrated_contract["scope"], "substantial-redesign")
 
     def test_revision_tracks_all_state_but_request_id_tracks_payload(self) -> None:
@@ -684,7 +860,6 @@ class ReleaseWorkflowTests(unittest.TestCase):
                 'style="display:block;width:100%;height:auto;margin:0;border:0;" />'
             )
         write_contract(workspace, contract)
-        article_workspace.record_plan(workspace)
         family = "-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif"
         fragment = (
             f"{article_workspace.START}\n"
@@ -693,7 +868,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
             'style="margin:0;padding:0 8px;background:#FFFFFF;color:#202020;">'
             '<section data-layout-role="content-inset" '
             'style="margin:0;padding:0 18px;background:#FFFFFF;color:#202020;">'
-            f'<p data-type-role="body" data-spacing-role="paragraph-gap" '
+            f'<p data-type-role="body" data-indent-role="body-paragraph" '
+            f'data-spacing-role="paragraph-gap" '
             f'style="margin:0 0 10px;padding:0;color:#202020;background:#FFFFFF;'
             f"font-family:{family};font-size:16px;line-height:1.9;font-weight:400;"
             'letter-spacing:0;text-align:left;text-indent:2em;overflow-wrap:anywhere;">'
@@ -702,6 +878,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
             f"{article_workspace.END}\n"
         )
         (workspace / "fragment.html").write_text(fragment, encoding="utf-8")
+        article_workspace.record_plan(workspace)
         return workspace
 
     def test_backend_status_requires_all_variables_and_healthy_response(self) -> None:

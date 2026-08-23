@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -16,8 +17,29 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from .audit_design_contract import (
+        SPACING_RULES,
+        ContractParser,
+        _side,
+    )
+    from .audit_wechat_contrast import ContrastParser, color_label, parse_color
+    from .audit_wechat_markup import MarkupParser
+    from .audit_wechat_typography import (
+        CONTAINER_TAGS,
+        TypographyParser,
+        _font_stack,
+        _font_weight,
+        _indent_em,
+        _line_height,
+        _number_unit,
+        _zero_px,
+    )
+    from .audit_wechat_typography import (
+        audit_html as audit_typography_html,
+    )
     from .design_contract import (
         ContractError,
+        contract_warnings,
         empty_contract,
         fragment_sha256,
         load_contract,
@@ -26,8 +48,33 @@ try:
         validate_contract,
     )
 except ImportError:
+    from audit_design_contract import (  # type: ignore[no-redef]
+        SPACING_RULES,
+        ContractParser,
+        _side,
+    )
+    from audit_wechat_contrast import (  # type: ignore[no-redef]
+        ContrastParser,
+        color_label,
+        parse_color,
+    )
+    from audit_wechat_markup import MarkupParser  # type: ignore[no-redef]
+    from audit_wechat_typography import (  # type: ignore[no-redef]
+        CONTAINER_TAGS,
+        TypographyParser,
+        _font_stack,
+        _font_weight,
+        _indent_em,
+        _line_height,
+        _number_unit,
+        _zero_px,
+    )
+    from audit_wechat_typography import (
+        audit_html as audit_typography_html,
+    )
     from design_contract import (  # type: ignore[no-redef]
         ContractError,
+        contract_warnings,
         empty_contract,
         fragment_sha256,
         load_contract,
@@ -448,25 +495,405 @@ def create_workspace(
     }
 
 
+def _uniform_number(values: list[float | None], label: str) -> float:
+    if not values or any(value is None for value in values):
+        raise WorkspaceError(f"cannot extract {label} from the selected fragment")
+    concrete = [float(value) for value in values if value is not None]
+    if any(abs(value - concrete[0]) > 0.01 for value in concrete[1:]):
+        raise WorkspaceError(f"selected fragment uses conflicting values for {label}")
+    return concrete[0]
+
+
+def _extract_typography(
+    fragment: str,
+) -> tuple[dict[str, dict[str, Any]], float | None]:
+    parser = TypographyParser()
+    parser.feed(fragment)
+    parser.close()
+    observed: dict[str, list[tuple[dict[str, Any], float, bool]]] = {}
+
+    for node in parser.nodes:
+        if (
+            node.tag in CONTAINER_TAGS
+            and "text-indent" in node.declared_style
+        ):
+            size = _number_unit(node.style.get("font-size"), "px")
+            indent = _indent_em(node.declared_style.get("text-indent"), size)
+            if indent is None or abs(indent) > 0.01:
+                raise WorkspaceError(
+                    f"layout container at line {node.line} must not carry first-line indentation"
+                )
+
+    for node in parser.nodes:
+        if node.explicit_role is None or not "".join(node.text).strip():
+            continue
+        style = node.style
+        size = _number_unit(style.get("font-size"), "px")
+        leading = _line_height(style.get("line-height"), size)
+        weight = _font_weight(style.get("font-weight"))
+        stack = _font_stack(style.get("font-family"))
+        alignment = (style.get("text-align") or "").lower()
+        if _zero_px(style.get("letter-spacing")):
+            tracking = 0.0
+        else:
+            tracking = _number_unit(style.get("letter-spacing"), "px")
+        wrap = next(
+            (
+                f"{name}:{style[name]}"
+                for name in ("overflow-wrap", "word-break", "white-space")
+                if style.get(name)
+            ),
+            None,
+        )
+        indent = _indent_em(style.get("text-indent"), size)
+        missing = [
+            name
+            for name, value in (
+                ("font-family", stack),
+                ("font-size", size),
+                ("line-height", leading),
+                ("font-weight", weight),
+                ("text-align", alignment),
+                ("letter-spacing", tracking),
+                ("text-indent", indent),
+                ("wrapping", wrap),
+            )
+            if value is None or value == ""
+        ]
+        if missing:
+            raise WorkspaceError(
+                f"cannot extract typography role {node.explicit_role!r} at line "
+                f"{node.line}; missing explicit or inherited {', '.join(missing)}"
+            )
+        is_body_paragraph = node.indent_role == "body-paragraph"
+        if node.indent_role is not None and not is_body_paragraph:
+            raise WorkspaceError(
+                "data-indent-role supports only 'body-paragraph'"
+            )
+        if is_body_paragraph and (
+            node.tag != "p" or node.explicit_role != "body"
+        ):
+            raise WorkspaceError(
+                "data-indent-role='body-paragraph' requires a p with "
+                "data-type-role='body'"
+            )
+        if not is_body_paragraph and abs(float(indent)) > 0.01:
+            raise WorkspaceError(
+                f"only marked body paragraphs may use text-indent; "
+                f"role {node.explicit_role!r} at line {node.line} must use text-indent:0"
+            )
+        values = {
+            "font_stack": stack,
+            "font_size_px": float(size),
+            "line_height": float(leading),
+            "font_weight": int(weight),
+            "alignment": alignment,
+            "letter_spacing_px": float(tracking),
+            "wrap": wrap,
+        }
+        observed.setdefault(node.explicit_role, []).append(
+            (values, float(indent), is_body_paragraph)
+        )
+
+    if not observed:
+        raise WorkspaceError(
+            "selected fragment must contain visible text with data-type-role markers"
+        )
+
+    roles: dict[str, dict[str, Any]] = {}
+    body_indents: list[float] = []
+    for role, records in observed.items():
+        first_values = records[0][0]
+        if any(values != first_values for values, _, _ in records[1:]):
+            raise WorkspaceError(
+                f"typography role {role!r} uses conflicting implementation values"
+            )
+        roles[role] = first_values
+        if role == "body":
+            body_indents.extend(
+                indent for _, indent, is_body_paragraph in records if is_body_paragraph
+            )
+    body_indent = (
+        _uniform_number(body_indents, "body paragraph first-line indentation")
+        if body_indents
+        else None
+    )
+    return roles, body_indent
+
+
+def _extract_palette(fragment: str, contract: dict[str, Any]) -> None:
+    parser = ContrastParser()
+    parser.feed(fragment)
+    parser.close()
+    colors: list[tuple[str, str]] = []
+    for declared in parser.declared_colors:
+        parsed = parse_color(str(declared["value"]))
+        if parsed is None or parsed[3] == 0:
+            continue
+        label = color_label(parsed)
+        property_name = str(declared["property"])
+        if label not in {value for value, _ in colors}:
+            colors.append((label, property_name))
+    if not colors:
+        return
+
+    palette = contract["color"]
+    backgrounds = [
+        value
+        for value, property_name in colors
+        if property_name in {"background", "background-color"}
+    ]
+    foregrounds = [
+        value
+        for value, property_name in colors
+        if property_name in {"color", "fill"}
+    ]
+    field = backgrounds[0] if backgrounds else str(palette["field"]["value"])
+    ink = foregrounds[0] if foregrounds else str(palette["ink"]["value"])
+    palette["field"] = {
+        "value": field,
+        "reason": "Machine-extracted reading field from the selected HTML.",
+    }
+    palette["ink"] = {
+        "value": ink,
+        "reason": "Machine-extracted primary text color from the selected HTML.",
+    }
+
+    remaining = [value for value, _ in colors if value not in {field, ink}]
+    for key in ("primary_signal", "secondary_signal", "correction"):
+        previous = palette.get(key, {})
+        previous_value = previous.get("value") if isinstance(previous, dict) else None
+        if previous_value in remaining:
+            value = previous_value
+            remaining.remove(value)
+            reason = previous.get("reason") or "Retained semantic role from the selected design."
+        elif remaining:
+            value = remaining.pop(0)
+            reason = "Machine-extracted supporting color from the selected HTML."
+        else:
+            value = None
+            reason = ""
+        palette[key] = {"value": value, "reason": reason}
+    palette["image_support"] = [
+        {
+            "value": value,
+            "reason": "Machine-extracted additional color from the selected HTML.",
+        }
+        for value in remaining
+    ]
+    palette["usage_ratio"] = (
+        "Palette membership is machine-extracted; visual proportions follow the selected HTML."
+    )
+    if not str(palette["contrast"].get("rationale", "")).strip():
+        palette["contrast"]["rationale"] = (
+            "Readability thresholds are checked against the selected HTML."
+        )
+
+
+def _extract_media(fragment_parser: ContractParser, contract: dict[str, Any]) -> None:
+    assets = contract["media"]["assets"]
+    body_assets = {
+        item["name"]: item for item in assets if item.get("placement") == "body"
+    }
+    implemented_names = [name for name, _, _, _, _ in fragment_parser.media]
+    unknown = [name for name in implemented_names if name not in body_assets]
+    missing = [name for name in body_assets if name not in implemented_names]
+    if unknown:
+        raise WorkspaceError(
+            "selected fragment contains body media without contract authority metadata: "
+            + ", ".join(repr(name) for name in unknown)
+        )
+    if missing:
+        raise WorkspaceError(
+            "contract body media is absent from the selected fragment: "
+            + ", ".join(repr(name) for name in missing)
+        )
+
+    captions: dict[str, list[str]] = {}
+    for record in fragment_parser.captions:
+        captions.setdefault(str(record["name"]), []).append(
+            re.sub(r"\s+", " ", "".join(record["parts"])).strip()
+        )
+    if any(len(values) > 1 for values in captions.values()):
+        raise WorkspaceError("each body media item may have at most one selected caption")
+
+    for order, (name, _, _, crop, _) in enumerate(fragment_parser.media, start=1):
+        asset = body_assets[name]
+        asset["order"] = order
+        if crop:
+            asset["crop"] = crop
+        values = captions.get(name, [])
+        asset["caption"] = (
+            values[0]
+            if values
+            else "N/A: the selected HTML contains no caption for this body asset."
+        )
+    next_order = len(implemented_names) + 1
+    for asset in sorted(
+        (item for item in assets if item.get("placement") == "cover"),
+        key=lambda item: item.get("order", 999),
+    ):
+        asset["order"] = next_order
+        next_order += 1
+
+
+def _extract_selected_implementation(
+    contract: dict[str, Any], fragment_file: str
+) -> dict[str, Any]:
+    candidate = copy.deepcopy(contract)
+    fragment = _extract_fragment(fragment_file)
+    parser = ContractParser()
+    parser.feed(fragment)
+    parser.close()
+    if not parser.modules:
+        raise WorkspaceError(
+            "selected fragment must mark each article module with data-module-id and data-density"
+        )
+
+    candidate["editorial"]["module_sequence"] = [
+        name for name, _, _ in parser.modules
+    ]
+    candidate["layout"]["density_curve"] = [
+        density for _, density, _ in parser.modules
+    ]
+    dominant = [name for name, density, _ in parser.modules if density == "dominant"]
+    if dominant:
+        candidate["editorial"]["dominant_module"] = dominant[0]
+
+    layout = candidate["layout"]
+    for role, key in (
+        ("outer-baseline", "outer_baseline_px"),
+        ("content-inset", "content_inset_px"),
+    ):
+        markers = parser.layout.get(role, [])
+        if len(markers) != 1:
+            raise WorkspaceError(
+                f"selected fragment must contain exactly one data-layout-role={role!r}"
+            )
+        style, _ = markers[0]
+        layout[key] = _uniform_number(
+            [_side(style, "padding", "left"), _side(style, "padding", "right")],
+            role,
+        )
+    layout["fixed_widths_px"] = sorted(parser.fixed_widths)
+    layout["used_spacing_roles"] = list(parser.spacing)
+    for role, markers in parser.spacing.items():
+        if role not in SPACING_RULES:
+            continue
+        property_name, side, key = SPACING_RULES[role]
+        values: list[float | None] = []
+        for style, _ in markers:
+            if side == "vertical":
+                values.extend(
+                    (
+                        _side(style, property_name, "top"),
+                        _side(style, property_name, "bottom"),
+                    )
+                )
+            else:
+                values.append(_side(style, property_name, side))
+        layout[key] = _uniform_number(values, role)
+    if not str(layout.get("alignment_behavior", "")).strip():
+        layout["alignment_behavior"] = (
+            "Alignment behavior is machine-extracted from the selected typography roles."
+        )
+
+    roles, body_indent = _extract_typography(fragment)
+    candidate["typography"]["roles"] = roles
+    if body_indent is not None:
+        candidate["typography"]["body_first_line_indent_em"] = body_indent
+    candidate["typography"]["role_relationships"] = "; ".join(
+        f"{role} {values['font_size_px']:g}px/{values['line_height']:g}"
+        for role, values in roles.items()
+    )
+
+    geometry = candidate["geometry"]
+    geometry["used_roles"] = list(parser.geometry)
+    geometry["implementations"] = {
+        role: sorted(
+            {
+                f"{property_name}:{value}"
+                for style, _ in markers
+                for property_name, value in style.items()
+            }
+        )
+        for role, markers in parser.geometry.items()
+    }
+    geometry_fields = {
+        "edge-language": "edge_language",
+        "divider-policy": "divider_policy",
+        "surface-policy": "surface_policy",
+        "radius-policy": "radius_policy",
+        "content-native-motif": "content_native_motif",
+    }
+    for role, key in geometry_fields.items():
+        geometry[key] = (
+            f"Machine-extracted from data-geometry-role={role}."
+            if role in parser.geometry
+            else f"N/A: the selected HTML does not use {role}."
+        )
+    geometry["recurrence_limit"] = (
+        f"The selected HTML contains {sum(len(items) for items in parser.geometry.values())} "
+        "geometry-role marker(s)."
+    )
+
+    _extract_media(parser, candidate)
+    _extract_palette(fragment, candidate)
+
+    markup = MarkupParser(
+        allow_media_placeholders=candidate["delivery"]["target"] == "local-preview"
+    )
+    markup.feed(fragment)
+    markup.close()
+    effect_kind = (
+        "svg-smil"
+        if "svg" in markup.tags
+        else "static-css"
+        if markup.expressive_css_used
+        else "none"
+    )
+    effects = candidate["effects"]
+    effects["kind"] = effect_kind
+    if effect_kind != "none":
+        defaults = {
+            "semantic_job": "Support the selected article hierarchy.",
+            "static_state": "Essential content is visible in the initial rendered state.",
+            "fallback": "Retain readable single-column content when the effect is stripped.",
+            "compatibility_risk": "The WeChat editor may simplify conditional presentation.",
+            "test_obligation": "Inspect the final draft in the WeChat editor and on a phone.",
+        }
+        for key, value in defaults.items():
+            if not str(effects.get(key, "")).strip():
+                effects[key] = value
+
+    candidate["status"] = "PLANNED"
+    candidate["checks"]["design_values_verified"] = True
+    candidate["checks"]["implementation_extracted"] = True
+    candidate["checks"]["fragment_sha256"] = ""
+    return candidate
+
+
 def record_plan(article_dir: Path) -> dict[str, Any]:
     article_dir = article_dir.expanduser().resolve()
     manifest, article, fragment_file = _workspace_files(article_dir)
     contract = load_contract(article_dir / "design-contract.json")
-    validate_contract(contract, required_status="PLANNED")
+    if contract.get("schema_version") != 4:
+        raise WorkspaceError("plan requires a schema-4 design contract")
+    if contract.get("status") not in {"EXPLORING", "PLANNED"}:
+        raise WorkspaceError("plan accepts only an EXPLORING or PLANNED design contract")
     _check_title(article, contract)
+    contract = _extract_selected_implementation(contract, fragment_file)
+    validate_contract(contract, required_status="PLANNED")
+    warnings = contract_warnings(contract)
+    warnings.extend(
+        finding
+        for finding in audit_typography_html(_extract_fragment(fragment_file), contract)
+        if finding.get("severity") == "warning"
+    )
 
-    implementation_digest = fragment_sha256(_extract_fragment(fragment_file))
     plan_iterations = manifest.get("active_plan_iterations")
     if type(plan_iterations) is not int or plan_iterations < 0:
         raise WorkspaceError("manifest active_plan_iterations must be a non-negative integer")
-    if (
-        plan_iterations == 0
-        and manifest.get("implementation_base_sha256") != implementation_digest
-    ):
-        raise WorkspaceError(
-            "fragment.html changed before the PLANNED gate; restore the last READY fragment, "
-            "run plan, and only then implement the redesign"
-        )
 
     preview_enabled = bool(manifest.get("local_preview_enabled", True))
     expected_target = "local-preview" if preview_enabled else "direct-draft"
@@ -507,6 +934,7 @@ def record_plan(article_dir: Path) -> dict[str, Any]:
             "changed": False,
             "revision": manifest.get("revision", 0),
             "revision_dir": None,
+            "warnings": warnings,
         }
 
     candidate_manifest["workspace_state_sha256"] = state_hash
@@ -519,6 +947,7 @@ def record_plan(article_dir: Path) -> dict[str, Any]:
         "changed": True,
         "revision": revision,
         "revision_dir": str(revision_dir),
+        "warnings": warnings,
     }
 
 

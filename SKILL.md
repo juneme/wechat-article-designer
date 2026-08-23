@@ -17,15 +17,15 @@ Create audience-facing WeChat article fragments from the article's content and t
 6. Treat the real WeChat editor and phone preview as the rendering authority.
 7. Draft creation is staging; it does not authorize publication or mass sending.
 8. For a new article or substantial redesign, complete every stage gate and every design-contract dimension below. A conditional feature may be recorded as `none` or `N/A` with a content-based reason; it may not be silently omitted.
-9. Keep the private design contract synchronized with the implementation. Do not introduce an unrecorded layout, type, color, media, geometry, or effect decision while composing HTML.
+9. Explore and implement candidate directions before freezing the private design contract. The `plan` command extracts machine-observable values from the selected HTML so the contract and implementation stay synchronized.
 10. For a correction or minor revision, preserve the existing contract and rerun the gates affected by changed body, metadata, contract, assets, or preview state. Do not force a full redesign workflow unless the visual or editorial system changes materially.
 
 ## Route the request
 
 | Request | Read |
 |---|---|
-| New article or substantial redesign | `references/editorial-writing-grammar.md`, `references/article-design-synthesis.md`, `references/modular-composition-system.md`, `references/typography-system.md`, `references/design-grammar.md`, and `references/creative-css-capabilities.md` |
-| CSS capability or fallback decision | `references/creative-css-capabilities.md` |
+| New article or substantial redesign | `references/editorial-writing-grammar.md`, `references/article-design-synthesis.md`, `references/modular-composition-system.md`, `references/typography-system.md`, `references/design-grammar.md`, and `references/css-capabilities.md` |
+| CSS capability or fallback decision | `references/css-capabilities.md` |
 | Reusable inline block | `references/snippets.md` |
 | Article creation, synchronization, or version history | `references/article-workspaces.md` |
 | SVG component or interactive editorial layout | `references/svg-design-genes.md` |
@@ -40,14 +40,15 @@ Apply this boundary to every new full article and substantial redesign. It is a 
 
 1. **Route and workspace gate**: check the three console variables without printing their values, run `status` when all are present, choose direct draft or local preview, then create one article workspace. A user request for preview-only, HTML-only, or stop-before-draft overrides an available backend.
 2. **Editorial gate**: complete the content map and editorial promise, then make the unstyled article pass `references/editorial-writing-grammar.md`. Do not style unresolved copy.
-3. **Design gate**: edit the machine-readable `design-contract.json`. Every required dimension must contain a concrete decision or a reasoned `N/A`; no placeholder may remain. Set `status` to `PLANNED` after the planning checks pass, run the workspace `plan` command, and do not write publishable HTML before this state. `design-contract.md` is a generated private reading view and must not be edited.
-4. **Implementation gate**: build only from the approved copy, module manifest, type plan, and planned design contract. If a better visual decision emerges, return the contract to `PLANNED` and rerun `plan` before using it. Keep the contract `PLANNED`; only the release command may bind the exact fragment and promote it to `READY`.
-5. **Release gate**: use only `python scripts/release_article.py deliver <workspace>`. It binds the exact fragment to the contract, audits the local fragment and all publishable metadata before any upload, resolves the backend route, uploads prepared local media, re-audits the hosted result, creates one new draft when healthy, and otherwise produces the permitted local preview. Creative behavior requires a readable static state; the user may inspect the created Creative draft before deciding whether to retain or simplify it.
+3. **Exploration and implementation gate**: derive two or three lightweight visual directions when useful, choose the strongest one, and implement that candidate in `fragment.html`. Do not ask the user to approve intermediate directions. Keep facts and media authority explicit in `design-contract.json`; visual intent may remain `EXPLORING` while the candidate develops.
+4. **Freeze gate**: run the workspace `plan` command after selecting the implementation. It extracts structure, dimensions, spacing, typography, palette membership, media relationships, geometry declarations, and effects from the exact HTML, sets `PLANNED`, validates the remaining editorial and delivery decisions, and regenerates the private `design-contract.md`. Warnings guide refinement but do not block. Only the release command may bind the exact fragment and promote it to `READY`.
+5. **Release gate**: use only `python scripts/release_article.py deliver <workspace>`. It binds the exact fragment to the contract, audits the local fragment and all publishable metadata before any upload, resolves the backend route, uploads prepared local media, re-audits the hosted result, creates one new draft when healthy, and otherwise produces the permitted local preview. Any expressive behavior requires a readable static state; the user judges the final draft.
 
 The design contract must answer all of these dimensions:
 
 | Dimension | Required decision |
 |---|---|
+| Exploration | Candidate directions considered, selected direction, signature move, compatibility risk, and selection reason |
 | Editorial and structure | Reader, purpose, evidence boundary, reasoning path, module sequence, dominant module, and closing job |
 | Layout and rhythm | Reading order, outer baseline, content inset, widths, section spacing, paragraph spacing, density curve, and alignment behavior |
 | Typography | Actual font stack, size, line height, weight, alignment, first-line indent, letter spacing, wrapping, and role relationships for every used text role |
@@ -55,9 +56,9 @@ The design contract must answer all of these dimensions:
 | Media | The job, authority, order, crop, caption, and final/placeholder state of each image or illustration |
 | Geometry and motif | Edge language, rules, surfaces, radius policy, content-native motif, and where each may recur |
 | Effects and motion | Choose `none`, static expressive CSS, or SVG/SMIL; record its semantic job, compatibility risk, static state, fallback, and test obligation |
-| Delivery | Steady or Creative mode, must-keep and avoid rules, editor fallback, target route, and stop condition |
+| Delivery | Must-keep and avoid rules, editor fallback, target route, and stop condition |
 
-Mandatory decision does not mean mandatory decoration. In particular, never add animation, SVG, cards, gradients, shadows, or images merely to satisfy the matrix. Body paragraphs default to `text-indent:2em`; non-body roles use `0`, and a different body convention requires a recorded `body-first-line-indent` exception.
+Mandatory decision does not mean mandatory decoration. In particular, never add animation, SVG, cards, gradients, shadows, or images merely to satisfy the matrix. Only continuous prose paragraphs marked `data-indent-role="body-paragraph"` use the default `text-indent:2em`. Containers and all unmarked content use `text-indent:0`, including titles, leads, lists, quotations, dialogue, captions, cards, actions, and closings. A different prose convention produces a warning and may record a `body-first-line-indent` acknowledgment.
 
 ## Design a new article
 
@@ -74,9 +75,9 @@ Create a private:
 - module manifest for semantic roles, order, width, weight, and density;
 - type plan for display, section, item, body, label, caption, and data roles.
 
-Make the complete unstyled article pass the editorial review. Then evaluate the complete living grammar and fill every section of `design-contract.json` with article-specific values. Generate `design-contract.md` through the workspace command. The JSON contract, not an improvised HTML treatment, controls layout, typography, color, media, geometry, effects, fallback, and delivery.
+Make the complete unstyled article pass the editorial review. Then evaluate the living grammar, sketch two or three lightweight directions when that comparison is useful, select the strongest direction, and implement it. Before `plan`, complete the factual, editorial, media-authority, delivery, and exploration records that cannot be inferred from markup. The command extracts the selected implementation's concrete design values into JSON and regenerates `design-contract.md`.
 
-Do not show a template picker or start from a previous article. When exploration is requested, propose a small set of directions derived from the current content.
+Do not show a template picker or start from a previous article. Exploration is private working material: derive directions from the current content, select one yourself, and let the user judge the completed draft.
 
 ### 3. Write for the reader
 
@@ -93,16 +94,17 @@ Do not show a template picker or start from a previous article. When exploration
 - Prefer single-column `section`, `p`, and `span` flow.
 - Keep all required styles inline.
 - Use the article's images and subject to determine palette, motif, media rhythm, and transitions.
-- Set Chinese letter spacing to `0`; make hierarchy readable without color, cards, gradients, or shadows.
-- Put a supported `data-type-role` on each text-role root and `data-content-kind="dialogue"` or `"quotation"` on genuine quoted speech. Every module uses `data-module-id` and its matching `data-density`. Mark exactly one horizontal-padding implementation for `data-layout-role="outer-baseline"` and one for `data-layout-role="content-inset"`; list every pixel width in `layout.fixed_widths_px`. Mark used spacing and geometry with `data-spacing-role` and `data-geometry-role`, and make each geometry marker implement the exact declarations in `geometry.implementations`. Body media uses the recorded `data-media-id` and `data-media-crop`; a non-`N/A` caption follows it with `data-caption-for` and exact caption text. Implement the recorded font stack, sizes, line heights, weights, alignment, paragraph gaps, wrapping, and first-line indent exactly. Do not insert manual spaces to simulate indentation.
+- Set body letter spacing to `0`; use non-body tracking only when the selected composition remains legible. Make hierarchy readable without depending on color, cards, gradients, or shadows.
+- Keep display and section headings on one mobile line whenever the meaning can remain intact. First shorten the visible heading, then adjust its size and usable width within the article hierarchy. Preserve the full official title in metadata or a supporting deck when needed. Do not use `white-space:nowrap` to hide an overlong title; if one line is genuinely impossible, use at most two deliberately balanced lines and inspect them at 320px.
+- Put a supported `data-type-role` on each text-role root and `data-content-kind="dialogue"` or `"quotation"` on genuine quoted speech. Mark only ordinary continuous prose `p` elements with `data-indent-role="body-paragraph"`; `data-type-role="body"` by itself is a size/leading role and does not authorize indentation. Every module uses `data-module-id` and `data-density`. Mark exactly one horizontal-padding implementation each for `data-layout-role="outer-baseline"` and `"content-inset"`; mark used spacing and geometry with `data-spacing-role` and `data-geometry-role`. Body media uses authored contract metadata plus matching `data-media-id` and `data-media-crop`; a visible caption follows it with `data-caption-for`. Use explicit or inherited machine-readable type values and never insert manual spaces to simulate indentation. `plan` extracts these implementation values into the contract.
 - Adapt only the needed blocks from `references/snippets.md`; do not stack every available component.
-- Do not add a visual treatment that is absent from the design contract. Update and recheck the contract first when implementation changes a design decision.
+- After a selected design changes, rerun `plan` so the contract is re-extracted before release.
 
 ## Article workspace
 
 Read `references/article-workspaces.md` and create one workspace per article with `scripts/article_workspace.py`. Use `create --no-preview` for a ready direct-draft route and the default create command for the local-preview route. Keep `fragment.html` as the editable markup source, local images under `assets/`, and server draft data in `article.json`.
 
-Complete `design-contract.json`, set it to `PLANNED`, and run `plan` before HTML implementation. Do not set `READY` or `checks.fragment_sha256` manually: the enforced release command binds and promotes the exact audited fragment. Sync rejects a changed design plan or stale fragment binding, regenerates the private Markdown view, creates the script-free preview only for the local-preview route, physically removes an obsolete preview on the direct route, rotates `request_id` only when draft payload changed, and snapshots every body, metadata, contract, asset, or preview change under `revisions/`. Do not edit generated contract Markdown or copy one article's root-level files over another article.
+Develop the selected HTML while the contract is `EXPLORING`, then run `plan` to extract implementation values and freeze it as `PLANNED`. Do not set `READY` or `checks.fragment_sha256` manually: the enforced release command binds and promotes the exact audited fragment. Sync rejects a changed frozen plan or stale fragment binding, regenerates the private Markdown view, creates the script-free preview only for the local-preview route, physically removes an obsolete preview on the direct route, rotates `request_id` only when draft payload changed, and snapshots every body, metadata, contract, asset, or preview change under `revisions/`. Do not edit generated contract Markdown or copy one article's root-level files over another article.
 
 ## Images
 
@@ -133,11 +135,11 @@ Every final fragment must satisfy these invariants:
 - opening and closing `section`, `p`, and `span` counts balance;
 - all information remains readable after optional visual effects are removed.
 
-Use Steady mode by default. Use Creative mode when expressive CSS materially supports the article and the exact final fragment has a readable solid fallback. A configured backend may create that Creative draft for the user's real-editor review; lack of a prior editor test does not force Steady.
+There is one capability model. Inline flow, expressive CSS, and SVG/SMIL are available under the same contract when they materially support the article. Judge each declaration by its semantic value, readable fallback, and WeChat behavior; do not reduce the whole article to a capability label.
 
 Every new design must make an effects decision. `none` is the normal result when motion or expressive CSS adds no semantic value. CSS keyframe animation is not publishable because the fragment cannot contain a `style` block; use the established SVG/SMIL vocabulary when motion materially clarifies sequence or state.
 
-SVG editorial components are an established Creative capability. When an SVG materially improves explanation, comparison, sequence, reveal, or emphasis, read `references/svg-design-genes.md` and compose it from the article's Visual DNA. Essential facts and actions must remain understandable from the initial state or surrounding prose, but a duplicate fallback block is not required. SVG uses the normal article checks and draft validation, not a separate validation workflow.
+SVG editorial components are an established capability. When an SVG materially improves explanation, comparison, sequence, reveal, or emphasis, read `references/svg-design-genes.md` and compose it from the article's Visual DNA. Essential facts and actions must remain understandable from the initial state or surrounding prose, but a duplicate fallback block is not required. SVG uses the normal article checks and draft validation, not a separate validation workflow.
 
 ## Direct draft workflow
 
@@ -163,8 +165,8 @@ Before delivery:
 2. Confirm the release command produced a `READY`, machine-valid contract whose generated fragment digest, module order, spacing roles, geometry markers, and media order match the final fragment; inspect the regenerated private Markdown view.
 3. Review facts, promises, institutional terms, incentives, brands, and evidence images.
 4. Check approximately 320px, 375px, and 390px widths for overflow, long text, image loading, and reading order.
-5. Review the longest title, heading, label, URL, body size, leading, Chinese tracking, captions, and density changes.
-6. Preview Creative mode, manual swipe, or any fragile pattern in the real editor when available.
+5. Review the longest title and section heading at 320px. Resolve `heading-wrap-risk` by preferring a concise single-line display; retain a deliberate two-line heading only when compression would damage meaning. Also review labels, URLs, body size, leading, Chinese tracking, captions, and density changes.
+6. Preview manual swipe, expressive CSS, SVG/SMIL, or any fragile pattern in the real editor when available.
 7. For SVG, confirm the initial state and surrounding prose preserve essential meaning without requiring interaction.
 8. For direct delivery, require hosted body images, a permanent cover `media_id`, and successful draft validation.
 

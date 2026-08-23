@@ -413,7 +413,7 @@ def audit_html(
             reason = acknowledged.get("contrast-manual-review")
             finding: dict[str, object] = {
                 "code": "contrast-manual-review",
-                "severity": "warning" if reason else "error",
+                "severity": "warning",
                 "acknowledged": bool(reason),
                 "line": line,
                 "message": "Text on an image, gradient, or unparseable color requires manual contrast confirmation.",

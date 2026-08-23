@@ -18,10 +18,10 @@ Only content inside the boundary is synchronized into the server draft payload. 
 
 ## Body paragraph
 
-Use the contract's body values exactly. The default indent is two Chinese characters; a zero-indent article requires the recorded exception described in `typography-system.md`.
+Use the contract's body values exactly. This primitive is for an ordinary continuous-prose paragraph, so it carries the explicit indent marker. Do not add that marker to leads, lists, quotations, dialogue, cards, actions, or closings. The default indent is two Chinese characters; a zero-indent prose convention produces the warning described in `typography-system.md` and may record an acknowledgment.
 
 ```html
-<p data-type-role="body" data-spacing-role="paragraph-gap" style="margin:0 18px 10px;padding:0;color:#202020;font-size:16px;line-height:1.9;font-weight:400;letter-spacing:0;text-align:left;text-indent:2em;overflow-wrap:anywhere;">
+<p data-type-role="body" data-indent-role="body-paragraph" data-spacing-role="paragraph-gap" style="margin:0 18px 10px;padding:0;color:#202020;font-size:16px;line-height:1.9;font-weight:400;letter-spacing:0;text-align:left;text-indent:2em;overflow-wrap:anywhere;">
   [Audience-facing body paragraph]
 </p>
 ```
@@ -73,7 +73,7 @@ A caption adds context, source, time, identity, or a limitation. Remove it when 
 </section>
 ```
 
-Omit the label when it adds no orientation. Test the longest real heading at 320px.
+Omit the label when it adds no orientation. Prefer a concise single-line section heading. Shorten the visible phrase or adjust its type and usable width before allowing a wrap; never force `nowrap` when the text can overflow.
 
 ## Compact evidence flow
 
@@ -148,11 +148,11 @@ Preserve speaker identity and reading order in ordinary flow. Color may distingu
 <section data-content-kind="dialogue" style="margin:24px 8px 0;padding:0;">
   <section style="margin:0;padding:0 0 0 14px;border-left:3px solid #3155F5;">
     <p data-type-role="label" style="margin:0;color:#3155F5;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">采访者 · [姓名或角色]</p>
-    <p data-type-role="body" style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;font-weight:400;letter-spacing:0;text-indent:2em;">[问题]</p>
+    <p data-type-role="body" style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;font-weight:400;letter-spacing:0;text-indent:0;">[问题]</p>
   </section>
   <section style="margin:18px 0 0;padding:0 0 0 14px;border-left:3px solid #67A57B;">
     <p data-type-role="label" style="margin:0;color:#477A57;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:0;text-indent:0;">受访者 · [姓名或角色]</p>
-    <p data-type-role="body" style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;font-weight:400;letter-spacing:0;text-indent:2em;">[回答]</p>
+    <p data-type-role="body" style="margin:7px 0 0;color:#202020;font-size:15px;line-height:1.85;font-weight:400;letter-spacing:0;text-indent:0;">[回答]</p>
   </section>
 </section>
 ```
@@ -222,14 +222,15 @@ Use only when the scale and scoring method are meaningful. A rating without a de
 - The opener names the literal topic; the close resolves ownership or action.
 - One module is dominant, density changes deliberately, and unrelated content is not forced into equal cards.
 - Body copy is normally 15-16px with at least 1.85 leading.
-- Chinese letter spacing is `0`; first-line indentation and paragraph gaps follow one recorded policy without manual-space indentation; long labels, URLs, and identifiers wrap at 320px.
+- Display and section headings prefer one mobile line; every estimated wrap risk or deliberate two-line break has been reviewed at 320px, with no `nowrap` overflow.
+- Body letter spacing is `0`; display tracking remains legible; only `data-indent-role="body-paragraph"` prose uses first-line indentation; all other content uses `0`; manual-space indentation is absent; long labels, URLs, and identifiers wrap at 320px.
 - Centered prose is short; captions and disclaimers remain readable.
 
 ### Color and effects
 
 - Every color maps to a recorded field, ink, signal, correction, or image-support role; hierarchy remains understandable without accent color.
 - The final fragment follows the recorded `none`, static expressive CSS, or SVG/SMIL decision and preserves its readable static state and fallback.
-- Creative effects preserve a readable fallback. The user may inspect the created Creative draft in the real editor and decide whether to retain or simplify it.
+- Expressive effects preserve a readable fallback. The user may inspect the created draft in the real editor and decide whether to retain or simplify them.
 
 ### Markup and media
 

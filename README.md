@@ -73,19 +73,19 @@ python scripts/article_workspace.py create --title '文章标题' --date 'YYYY-M
 
 若三个 Console 配置完整且状态健康，默认直接交付草稿，建工作区时使用 `--no-preview`；用户明确要求只预览，或后端未配置/不可用时，才使用默认的本地预览路线。
 
-只编辑工作区中的 `design-contract.json`，确认裸文、版式、文字排版、颜色、图像、几何、动效选择和静态降级均已确定，将状态改为 `PLANNED` 并执行计划门：
+先完成裸文，再根据内容探索两到三个轻量视觉方向（确有比较价值时），由智能体选择并实现最强方案。事实、证据边界、媒体权威、交付路线和探索记录写入 `design-contract.json`；候选阶段保持 `EXPLORING`。实现选定的 `fragment.html` 后执行计划门：
 
 ```powershell
 python scripts/article_workspace.py plan '.\articles\日期_标题'
 ```
 
-随后实现 `fragment.html` 并编辑 `article.json`。不要手工设置 `READY` 或正文摘要；统一发布命令会绑定最终片段、执行全部审查、选择路线并完成草稿或预览交付。`design-contract.md` 是自动生成的内部阅读视图，不应手工编辑：
+`plan` 会从选定 HTML 自动提取模块、密度、边距、宽度、间距、排版、首行缩进、色彩、媒体关系、几何声明和动效类型，将契约冻结为 `PLANNED`。只有标记为 `data-indent-role="body-paragraph"` 的连续正文段落使用默认 `2em` 首行缩进；标题、导语、列表、引用、问答、卡片说明、行动区、结语和容器全部为 `0`。大标题与章节标题优先保持移动端单行，机器会提示预计换行风险；应先缩短屏显标题或调整字号和可用宽度，不能用 `nowrap` 制造溢出。不要手工设置 `READY` 或正文摘要；统一发布命令会绑定最终片段、执行全部审查、选择路线并完成草稿或预览交付。`design-contract.md` 是自动生成的内部阅读视图，不应手工编辑：
 
 ```powershell
 python scripts/release_article.py deliver '.\articles\日期_标题'
 ```
 
-发布命令会拒绝未记录计划、提前实现 HTML、未完成契约、过期正文摘要或任一审查错误；标题、作者、摘要和本地片段先通过终审，才允许上传素材。后端健康时自动创建新草稿，否则只生成无脚本预览。缺少必需图片时会返回 `attempt_id`；真实生成失败后，必须同时提交该 ID 和失败原因才可转为预览。正文、元数据、契约、资产或预览变化都会递增版本，仅草稿载荷变化才轮换幂等 ID。详见 [`references/article-workspaces.md`](references/article-workspaces.md)。
+发布命令会拒绝未冻结计划、未完成契约、过期正文摘要或硬性审查错误；设计建议作为警告返回，不阻止交付。标题、作者、摘要和本地片段先通过终审，才允许上传素材。后端健康时自动创建新草稿，否则只生成无脚本预览。缺少必需图片时会返回 `attempt_id`；真实生成失败后，必须同时提交该 ID 和失败原因才可转为预览。正文、元数据、契约、资产或预览变化都会递增版本，仅草稿载荷变化才轮换幂等 ID。详见 [`references/article-workspaces.md`](references/article-workspaces.md)。
 
 升级旧文章工作区时先运行：
 
@@ -97,7 +97,7 @@ python scripts/article_workspace.py migrate '.\articles\日期_标题'
 
 ## SVG 互动排版
 
-SVG 是 Creative 模式中的稳定编辑能力。需要揭晓、对比、切换、横向序列、形态变化或节奏强调时，按 [`references/svg-design-genes.md`](references/svg-design-genes.md) 从文章内容和 Visual DNA 原创组件。关键信息应在初始状态或相邻正文中完整可读，不需要重复的静态回退块或额外的 SVG 验证流程。
+所有文章使用同一套能力边界，不再区分设计等级。需要揭晓、对比、切换、横向序列、形态变化或节奏强调时，可按 [`references/svg-design-genes.md`](references/svg-design-genes.md) 从文章内容和 Visual DNA 原创 SVG 组件。关键信息应在初始状态或相邻正文中完整可读，不需要重复的静态回退块或额外的 SVG 验证流程。
 
 ## 持续学习
 

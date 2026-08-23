@@ -36,8 +36,8 @@ The directory name is safe on Windows. A repeated title receives a numeric suffi
 
 ## Work in one source of truth
 
-- Write publishable HTML in `fragment.html`, inside the two boundary comments. On the first `plan` of each full design cycle, the fragment must still equal the initialized or last `READY` implementation; this prevents styling first and retrofitting the contract afterward.
-- Edit only `design-contract.json`. Complete every planning field and check, set `status` to `PLANNED`, and use a reasoned `N/A` for a conditional dimension that does not serve the article. Run `plan` before HTML implementation. The release command alone sets `READY` and generates `checks.fragment_sha256`; never fill that binding manually. `design-contract.md` is regenerated from JSON and must not be edited.
+- Write candidate and selected publishable HTML in `fragment.html`, inside the two boundary comments. Exploration may happen before the first `plan`; this is the intended way to compare real compositions instead of freezing guesses.
+- Edit factual, editorial, media-authority, delivery, and exploration decisions in `design-contract.json` while its status is `EXPLORING`. After selecting the implementation, run `plan`: it extracts machine-observable design values, sets `PLANNED`, and regenerates `design-contract.md`. The release command alone sets `READY` and generates `checks.fragment_sha256`; never fill that binding manually or edit generated Markdown.
 - Store local source images in `assets/`; final body image URLs still come from the console server.
 - Edit title, author, digest, comment flags, and cover `media_id` in `article.json`.
 - Treat `preview.html` as generated fallback output. It is created for the local-preview route and intentionally has no clipboard controls or scripts.
@@ -53,11 +53,11 @@ Schema-2 and schema-3 workspaces are preserved through one transactional command
 python scripts/article_workspace.py migrate '.\articles\日期_标题'
 ```
 
-The command upgrades the workspace to schema 4 and the design contract to schema 3, creates a revision snapshot, and never submits a draft. A schema-2 workspace without a prior design contract receives an `INCOMPLETE` substantial-redesign contract. A migrated schema-2 design contract records `legacy-contract-migration`; it may support a minor revision, but remove that exception and complete every new machine relationship on the next substantial redesign.
+The command upgrades both the workspace and design contract to schema 4, creates a revision snapshot, and never submits a draft. A schema-2 workspace without a prior design contract receives an `EXPLORING` substantial-redesign contract. A migrated schema-2 or schema-3 design contract records `legacy-contract-migration`; it may support a minor revision, but remove that exception and complete every new machine relationship on the next substantial redesign.
 
 ## Synchronize and version
 
-After completing the writing and design plan, validate and version the `PLANNED` contract:
+After selecting and implementing the strongest candidate, extract, validate, freeze, and version the `PLANNED` contract:
 
 ```powershell
 python scripts/article_workspace.py plan '.\articles\日期_标题'
@@ -69,7 +69,7 @@ After changing the fragment or article metadata, use the enforced delivery entry
 python scripts/release_article.py deliver '.\articles\日期_标题'
 ```
 
-The release command audits local content before any external mutation and then synchronizes:
+The `plan` result includes non-blocking design warnings. The release command audits local content before any external mutation and then synchronizes:
 
 1. refuses to continue when the canonical JSON contract, recorded plan hash, generated fragment hash, structural markers, publishable metadata, or required gate is incomplete;
 2. extracts the publishable fragment into `article.json.content`;

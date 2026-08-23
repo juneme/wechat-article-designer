@@ -55,6 +55,22 @@ INHERITED_PROPERTIES = {
 MANUAL_INDENT_SPACE = re.compile(
     r"^[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]"
 )
+CONTAINER_TAGS = {
+    "blockquote",
+    "li",
+    "ol",
+    "section",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "ul",
+}
+SINGLE_LINE_HEADING_ROLES = {"display", "section"}
+SINGLE_LINE_HEADING_BUDGET_PX = 288.0
 
 
 def parse_style(raw: str) -> dict[str, str]:
@@ -128,6 +144,29 @@ def _indent_em(value: str | None, font_size: float | None) -> float | None:
     return pixels / font_size if pixels is not None and font_size else None
 
 
+def _estimated_text_width(
+    value: str, font_size: float, letter_spacing: float
+) -> float:
+    width = 0.0
+    visible_characters = 0
+    for character in re.sub(r"\s+", " ", value).strip():
+        visible_characters += 1
+        codepoint = ord(character)
+        if character.isspace():
+            factor = 0.33
+        elif codepoint >= 0x2E80:
+            factor = 1.0
+        elif character in "ilI1|!.,:;'`":
+            factor = 0.35
+        elif character in "mwMW@#%&":
+            factor = 0.9
+        else:
+            factor = 0.58
+        width += font_size * factor
+    width += max(0, visible_characters - 1) * letter_spacing
+    return width
+
+
 class _Node:
     def __init__(
         self,
@@ -135,15 +174,20 @@ class _Node:
         tag: str,
         line: int,
         style: dict[str, str],
+        declared_style: dict[str, str],
         role: str | None,
         explicit_role: str | None,
+        indent_role: str | None,
     ) -> None:
         self.tag = tag
         self.line = line
         self.style = style
+        self.declared_style = declared_style
         self.role = role
         self.explicit_role = explicit_role
+        self.indent_role = indent_role
         self.text: list[str] = []
+        self.has_break = False
 
 
 class TypographyParser(HTMLParser):
@@ -155,7 +199,11 @@ class TypographyParser(HTMLParser):
         self.missing_role_lines: set[int] = set()
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "br":
+            for open_node in self.stack:
+                open_node.has_break = True
         attributes = dict(attrs)
+        declared_style = parse_style(attributes.get("style") or "")
         inherited_style = (
             {
                 name: value
@@ -165,15 +213,17 @@ class TypographyParser(HTMLParser):
             if self.stack
             else {}
         )
-        inherited_style.update(parse_style(attributes.get("style") or ""))
+        inherited_style.update(declared_style)
         explicit_role = attributes.get("data-type-role")
         role = explicit_role or (self.stack[-1].role if self.stack else None)
         node = _Node(
             tag=tag,
             line=self.getpos()[0] + self.line_offset,
             style=inherited_style,
+            declared_style=declared_style,
             role=role,
             explicit_role=explicit_role,
+            indent_role=attributes.get("data-indent-role"),
         )
         self.nodes.append(node)
         if tag not in VOID_TAGS:
@@ -220,9 +270,11 @@ def _add(
     code: str,
     line: int,
     message: str,
+    *,
+    severity: str = "error",
 ) -> None:
     findings.append(
-        {"code": code, "severity": "error", "line": line, "message": message}
+        {"code": code, "severity": severity, "line": line, "message": message}
     )
 
 
@@ -238,6 +290,19 @@ def audit_html(
     findings: list[dict[str, object]] = []
     typography = contract["typography"]
     roles: dict[str, Any] = typography["roles"]
+
+    for node in parser.nodes:
+        if node.tag not in CONTAINER_TAGS or "text-indent" not in node.declared_style:
+            continue
+        size = _number_unit(node.style.get("font-size"), "px")
+        indent = _indent_em(node.declared_style.get("text-indent"), size)
+        if indent is None or abs(indent) > 0.01:
+            _add(
+                findings,
+                "container-indent-not-allowed",
+                node.line,
+                "Layout containers must declare text-indent:0 or omit the declaration.",
+            )
 
     for line in sorted(parser.missing_role_lines):
         _add(
@@ -301,13 +366,48 @@ def audit_html(
                 f"Role {role} requires {planned['alignment']} alignment; found {style.get('text-align')!r}.",
             )
 
-        if not _zero_px(style.get("letter-spacing")):
+        actual_tracking = (
+            0.0
+            if _zero_px(style.get("letter-spacing"))
+            else _number_unit(style.get("letter-spacing"), "px")
+        )
+        planned_tracking = float(planned["letter_spacing_px"])
+        if actual_tracking is None or abs(actual_tracking - planned_tracking) > 0.01:
             _add(
                 findings,
                 "letter-spacing-contract-mismatch",
                 node.line,
-                f"Role {role} requires zero letter spacing; found {style.get('letter-spacing')!r}.",
+                f"Role {role} requires {planned_tracking:g}px letter spacing; "
+                f"found {style.get('letter-spacing')!r}.",
             )
+
+        if role in SINGLE_LINE_HEADING_ROLES and actual_size is not None:
+            estimated_width = _estimated_text_width(
+                visible,
+                actual_size,
+                actual_tracking if actual_tracking is not None else 0.0,
+            )
+            if node.has_break:
+                _add(
+                    findings,
+                    "heading-forced-line-break",
+                    node.line,
+                    f"Role {role} contains an explicit line break. Prefer a single-line "
+                    "mobile heading; keep two deliberate lines only when the full meaning "
+                    "cannot fit after editing.",
+                    severity="warning",
+                )
+            elif estimated_width > SINGLE_LINE_HEADING_BUDGET_PX:
+                _add(
+                    findings,
+                    "heading-wrap-risk",
+                    node.line,
+                    f"Role {role} is estimated at {estimated_width:.0f}px against a "
+                    f"{SINGLE_LINE_HEADING_BUDGET_PX:.0f}px mobile heading budget. "
+                    "Shorten the visible heading, adjust its type or usable width, and "
+                    "avoid nowrap overflow.",
+                    severity="warning",
+                )
 
         planned_stack = [str(item).casefold() for item in planned["font_stack"]]
         if _font_stack(style.get("font-family")) != planned_stack:
@@ -328,8 +428,25 @@ def audit_html(
                 f"Role {role} requires {wrap}; implementation differs.",
             )
 
+        is_body_paragraph = node.indent_role == "body-paragraph"
+        if node.indent_role is not None and not is_body_paragraph:
+            _add(
+                findings,
+                "unknown-indent-role",
+                node.line,
+                "data-indent-role supports only 'body-paragraph'.",
+            )
+        if is_body_paragraph and (node.tag != "p" or role != "body"):
+            _add(
+                findings,
+                "invalid-body-paragraph-indent",
+                node.line,
+                "data-indent-role='body-paragraph' requires a p with data-type-role='body'.",
+            )
         expected_indent = (
-            float(typography["body_first_line_indent_em"]) if role == "body" else 0.0
+            float(typography["body_first_line_indent_em"])
+            if is_body_paragraph and node.tag == "p" and role == "body"
+            else 0.0
         )
         actual_indent = _indent_em(style.get("text-indent"), actual_size)
         if actual_indent is None or abs(actual_indent - expected_indent) > 0.01:
@@ -360,12 +477,13 @@ def audit(path: Path, contract_path: Path) -> dict[str, object]:
     validate_contract(contract, required_status="READY")
     value, line_offset = _article_html(path)
     findings = audit_html(value, contract, line_offset=line_offset)
+    errors = [item for item in findings if item["severity"] == "error"]
     return {
-        "ok": not findings,
+        "ok": not errors,
         "article": path.name,
         "contract": contract_path.name,
-        "error_count": len(findings),
-        "warning_count": 0,
+        "error_count": len(errors),
+        "warning_count": len(findings) - len(errors),
         "findings": findings,
     }
 

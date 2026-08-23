@@ -18,12 +18,12 @@ Build a private content map:
 
 Do not request a visual-template selection when these signals are sufficient.
 
-## Build writing, structure, and type first
+## Build writing and structure first
 
 1. Read `editorial-writing-grammar.md` and make the unstyled draft establish a defensible promise, reasoning path, and evidence boundary.
 2. Read `modular-composition-system.md` and map payload to semantic module roles.
-3. Read `typography-system.md` and define display, section, item, body, label, caption, and data roles supported by the copy.
-4. Set the density curve: where the article declares, proves, pauses, explains, asks, and closes.
+3. Read `typography-system.md` and identify the display, section, item, body, label, caption, and data jobs supported by the copy.
+4. Sketch the density curve: where the article declares, proves, pauses, explains, asks, and closes.
 
 Do not choose a surface, card, or source-derived visual move until these decisions exist.
 
@@ -40,38 +40,39 @@ Read `design-grammar.md`. Evaluate every normalized dimension against the conten
 7. **Image behavior** - evidence frame, full-width pause, portrait study, contact sheet, object sequence, or no image.
 8. **Recurring motif** - derive it from the article's subject, never from a generic style label.
 9. **Closing device** - resolve the argument, ownership, or action without repeating the opener.
-10. **Delivery mode** - Steady or Creative with a readable static fallback.
+10. **Compatibility behavior** - the readable static state, likely editor risks, and fallback for each conditional technique.
 
 The living grammar contains only normalized design decisions, not source records. Normal generation must not reconstruct a source catalog or pick a source winner.
 
-## Complete the private design contract
+## Explore, select, then freeze the private design contract
 
-Use `design-contract.json` as the only editable contract source. Before HTML, replace every placeholder with an article-specific decision. A conditional dimension may say `none` or `N/A`, but it must explain why that is correct for the content. Complete the planning checks, set `status` to `PLANNED`, and run the workspace `plan` command before implementation. Keep it `PLANNED` while composing; the enforced release command generates `checks.fragment_sha256`, verifies the structural markers, and promotes the exact audited fragment to `READY`. Inspect but never edit the generated `design-contract.md`.
+Use `design-contract.json` as the only editable contract source. Record two or three lightweight directions when useful, select the strongest, and implement that candidate while the contract remains `EXPLORING`. Complete editorial facts, evidence limits, media authority, route decisions, and other information that markup cannot prove. Then run the workspace `plan` command. It extracts machine-observable implementation values from the selected HTML, changes the contract to `PLANNED`, and freezes that design for release. The enforced release command generates `checks.fragment_sha256`, verifies the exact fragment, and promotes it to `READY`. Inspect but never edit the generated `design-contract.md`.
 
 Record all of the following:
 
 | Dimension | Minimum concrete record |
 |---|---|
+| Exploration | Direction names and theses, signature moves, compatibility risks, selected direction, and selection reason |
 | Editorial and evidence | Reader situation, central friction, judgment, reader gain, source facts, evidence boundary, and desired action |
 | Composition | Module manifest, one dominant module, reading order, widths, outer baseline, content inset, density curve, and semantic spacing scale |
-| Typography | Every used `data-type-role` with font stack, size, line height, weight, alignment, zero letter spacing, and machine-parseable wrapping; also record role relationships, body paragraph gap, and the default `2em` first-line indent or its exception |
+| Typography | Every used `data-type-role` with font stack, size, line height, weight, alignment, letter spacing, and machine-parseable wrapping; also record role relationships, body paragraph gap, and the default `2em` first-line indent or its exception. Only continuous prose carries `data-indent-role="body-paragraph"`. |
 | Color | Exact hex values for field, ink, primary signal, secondary signal, correction, and image-derived support; state where each is allowed and how contrast survives without effects |
 | Media | Each asset's reader job, factual authority, order, crop or aspect behavior, caption/source need, and placeholder or hosted state |
 | Geometry and motif | Primary edge language, radius policy, dividers, surface behavior, content-native motif, recurrence limit, and exceptions |
 | Effects and motion | Select `none`, static expressive CSS, or SVG/SMIL; state the semantic job, static first state, fallback, compatibility risk, and exact-fragment test obligation |
-| Delivery | Steady or Creative, backend readiness result, draft or local-preview target, must-keep decisions, avoid decisions, fallback, and stop condition |
+| Delivery | Backend readiness result, draft or local-preview target, must-keep decisions, avoid decisions, fallback, and stop condition |
 
-Machine relationships are explicit. Make `editorial.module_sequence` exactly match `data-module-id` order and `layout.density_curve` exactly match those modules' `data-density` values. Implement `outer_baseline_px` and `content_inset_px` as horizontal padding on the unique matching `data-layout-role`; list every pixel `width`, `min-width`, and `max-width` in `fixed_widths_px`. List every used spacing token in `layout.used_spacing_roles` and place its matching `data-spacing-role` on an element whose inline value implements the recorded number. List every non-`N/A` geometry decision in `geometry.used_roles`, define its exact inline declarations under `geometry.implementations`, and implement them on the matching `data-geometry-role`. Each media record uses a unique `name`, `order`, `placement`, `required`, state, machine-readable crop, and workspace-relative `source_path`; body placements use the same `data-media-id` and `data-media-crop` in reading order. A real caption follows the image with `data-caption-for` and exact contract text. The release command generates `checks.fragment_sha256` so unverified edits invalidate the complete relationship.
+Machine relationships are explicit in HTML markers. Give modules `data-module-id` and `data-density`; mark one horizontal-padding implementation each for `data-layout-role="outer-baseline"` and `"content-inset"`; identify semantic spacing and geometry with `data-spacing-role` and `data-geometry-role`; and place `data-type-role` on visible text-role roots. Mark only continuous prose paragraphs with `data-indent-role="body-paragraph"`; every unmarked role and container uses `text-indent:0`. Each media record still requires authored authority and reader-job metadata; body placements use the same `data-media-id` and a machine-readable `data-media-crop`. A real caption follows the image with `data-caption-for`. During `plan`, the parser writes the implemented module order, density, dimensions, fixed widths, spacing values, geometry declarations, typography values, prose indent, palette membership, media order/crops/captions, and effect kind into the contract. The release command generates `checks.fragment_sha256` so later unverified edits invalidate the relationship.
 
 Typography and color require actual values, not adjectives such as "large", "airy", "warm", or "high contrast". Layout requires explicit relationships, not a component name. Effects require a decision even when the answer is `none`; the contract never creates a quota for decoration.
 
-This contract belongs to the article. Do not copy a learned source's complete order into it. If implementation changes one of these decisions, return the contract to `PLANNED`, revise it, and rerun `plan`. Keep it `PLANNED` until the release command rechecks the final fragment and restores `READY`; do not change status merely to pass synchronization.
+This contract belongs to the article. Do not copy a learned source's complete order into it. If the selected implementation changes, rerun `plan` so the extracted contract changes with it. Keep it `PLANNED` until the release command rechecks the final fragment and restores `READY`; do not change status merely to pass synchronization.
 
 ## Anti-template gates
 
-All gates must pass:
+Safety, factual-integrity, WeChat-compatibility, width, body-readability, and publishing-state errors block release. The following design checks are review guidance; a deliberate exception may be recorded without preventing delivery:
 
-- The contract contains no unresolved placeholder, its status is `READY`, and each conditional `N/A` includes a content-based reason.
+- The contract contains no unresolved factual or delivery placeholder, its status is `READY`, and each conditional `N/A` includes a content-based reason.
 - The opener is justified by the article's literal topic, not by the nearest sample.
 - The module order follows the argument and evidence, not an asset's placeholder order.
 - The title, opening, headings, comparisons, and closing expose the real reasoning path without relying on components.

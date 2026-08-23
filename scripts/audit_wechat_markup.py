@@ -86,6 +86,7 @@ GLOBAL_ATTRIBUTES = {
     "data-density",
     "data-caption-for",
     "data-geometry-role",
+    "data-indent-role",
     "data-layout-role",
     "data-media-crop",
     "data-media-id",
@@ -463,22 +464,13 @@ def audit_html(
     parser.feed(value)
     parser.close()
     findings.extend(parser.findings)
-    if parser.expressive_css_used:
+    if parser.expressive_css_used and "svg" not in parser.tags:
         if contract["effects"]["kind"] != "static-css":
             findings.append(
                 {
                     "code": "effect-contract-mismatch",
                     "line": 1,
                     "message": "Expressive CSS requires effects.kind=static-css.",
-                    "warning_candidate": False,
-                }
-            )
-        if contract["delivery"]["mode"] != "creative":
-            findings.append(
-                {
-                    "code": "effect-mode-mismatch",
-                    "line": 1,
-                    "message": "Expressive CSS requires delivery.mode=creative.",
                     "warning_candidate": False,
                 }
             )
@@ -492,22 +484,13 @@ def audit_html(
                     "warning_candidate": False,
                 }
             )
-        if contract["delivery"]["mode"] != "creative":
-            findings.append(
-                {
-                    "code": "motion-mode-mismatch",
-                    "line": 1,
-                    "message": "SVG markup requires delivery.mode=creative.",
-                    "warning_candidate": False,
-                }
-            )
 
     exceptions = exception_map(contract)
     resolved: list[dict[str, object]] = []
     for finding in findings:
         warning_candidate = bool(finding.pop("warning_candidate"))
         reason = exceptions.get(str(finding["code"])) if warning_candidate else None
-        finding["severity"] = "warning" if reason else "error"
+        finding["severity"] = "warning" if warning_candidate else "error"
         finding["acknowledged"] = bool(reason)
         if reason:
             finding["exception_reason"] = reason

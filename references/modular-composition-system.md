@@ -25,7 +25,7 @@ Write one row for each required module before composing HTML:
 | Width | Full band, standard inset, or narrow inset |
 | Type role | The text hierarchy required by this payload |
 | Pattern | A core inline primitive or grammar capability, selected after the preceding fields |
-| Fallback | The readable Steady-mode form if an expressive effect is stripped |
+| Fallback | The readable form that remains if an expressive effect is stripped |
 
 The manifest is private workflow context. Do not publish role codes, source notes, or fallback instructions in the article.
 

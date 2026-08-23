@@ -22,7 +22,7 @@ UNRESOLVED_TEXT = re.compile(
     r"^(?:todo|tbd|placeholder|fill[ -]?me|待补充|待定|占位)(?:\b|\s|[:：])",
     re.IGNORECASE,
 )
-STATUS_VALUES = {"INCOMPLETE", "PLANNED", "READY"}
+STATUS_VALUES = {"EXPLORING", "PLANNED", "READY"}
 SCOPE_VALUES = {"new-article", "substantial-redesign"}
 TYPE_RANGES = {
     "display": ((28.0, 38.0), (1.20, 1.35)),
@@ -34,6 +34,17 @@ TYPE_RANGES = {
     "label": ((10.0, 12.0), (1.40, 1.60)),
     "code": ((12.0, 14.0), (1.60, 1.80)),
     "data": ((28.0, 52.0), (1.00, 1.20)),
+}
+HARD_TYPE_RANGES = {
+    "display": ((20.0, 64.0), (0.90, 1.80)),
+    "section": ((16.0, 48.0), (1.00, 2.00)),
+    "item": ((14.0, 32.0), (1.10, 2.20)),
+    "deck": ((13.0, 24.0), (1.20, 2.20)),
+    "body": TYPE_RANGES["body"],
+    "caption": ((10.0, 18.0), (1.20, 2.20)),
+    "label": ((9.0, 18.0), (1.00, 2.00)),
+    "code": ((10.0, 18.0), (1.20, 2.20)),
+    "data": ((18.0, 72.0), (0.85, 1.60)),
 }
 ALIGNMENTS = {"left", "center", "right"}
 EFFECT_KINDS = {"none", "static-css", "svg-smil"}
@@ -66,6 +77,11 @@ EXCEPTION_CODES = {
     "unverifiable-width-expression",
     "workflow-narration",
     "legacy-contract-migration",
+    "effect-editor-review",
+    "limited-design-exploration",
+    "missing-dominant-module",
+    "typography-recommended-range",
+    "letter-spacing-recommended-range",
 }
 
 
@@ -81,10 +97,15 @@ def empty_contract(
 ) -> dict[str, Any]:
     target = "local-preview" if local_preview else "direct-draft"
     return {
-        "schema_version": 3,
-        "status": "INCOMPLETE",
+        "schema_version": 4,
+        "status": "EXPLORING",
         "scope": scope,
         "article_title": title,
+        "exploration": {
+            "directions": [],
+            "selected_direction": "",
+            "selection_reason": "",
+        },
         "editorial": {
             "reader": "",
             "narrator": "",
@@ -185,7 +206,6 @@ def empty_contract(
             "user_review_after_draft": False,
         },
         "delivery": {
-            "mode": "steady",
             "backend_ready": not local_preview,
             "target": target,
             "user_requested_preview_only": False,
@@ -203,6 +223,7 @@ def empty_contract(
         "checks": {
             "editorial_passed": False,
             "design_values_verified": False,
+            "implementation_extracted": False,
             "fragment_sha256": "",
         },
     }
@@ -298,7 +319,7 @@ def _reasoned_color(
     if color is None:
         if required:
             errors.append(f"{path}.value must be a #RRGGBB color")
-        _text(reason, f"{path}.reason", errors)
+        _text(reason, f"{path}.reason", errors, allow_empty=not required)
         return
     if not isinstance(color, str) or not HEX_COLOR.fullmatch(color):
         errors.append(f"{path}.value must be a #RRGGBB color or null")
@@ -321,53 +342,96 @@ def exception_map(contract: dict[str, Any]) -> dict[str, str]:
 
 
 def migrate_contract(contract: dict[str, Any]) -> dict[str, Any]:
-    """Upgrade a schema-2 contract without inventing article-specific design facts."""
+    """Upgrade legacy contracts while preserving their selected implementation."""
     version = contract.get("schema_version")
-    if version == 3:
+    if version == 4:
         return copy.deepcopy(contract)
-    if version != 2:
+    if version not in {2, 3}:
         raise ContractError(f"cannot migrate design-contract schema {version!r}")
 
     migrated = copy.deepcopy(contract)
-    migrated["schema_version"] = 3
-    geometry = migrated.setdefault("geometry", {})
-    implementations = geometry.setdefault("implementations", {})
-    for role in geometry.get("used_roles", []):
-        implementations.setdefault(role, [])
-    layout = migrated.setdefault("layout", {})
-    reading_order = str(layout.get("reading_order", "")).casefold()
-    layout["reading_order"] = (
-        "single-column-with-manual-swipe"
-        if "swipe" in reading_order or "horizontal" in reading_order
-        else "single-column"
-    )
-    modules = migrated.get("editorial", {}).get("module_sequence", [])
-    old_density = layout.get("density_curve", [])
-    density: list[str] = []
-    for index in range(len(modules)):
-        value = str(old_density[index] if index < len(old_density) else "moderate").casefold()
-        density.append(
-            next(
-                (
-                    candidate
-                    for candidate in ("dominant", "dense", "open", "pause", "moderate")
-                    if candidate in value
-                ),
-                "moderate",
-            )
+    if version == 2:
+        geometry = migrated.setdefault("geometry", {})
+        implementations = geometry.setdefault("implementations", {})
+        for role in geometry.get("used_roles", []):
+            implementations.setdefault(role, [])
+        layout = migrated.setdefault("layout", {})
+        reading_order = str(layout.get("reading_order", "")).casefold()
+        layout["reading_order"] = (
+            "single-column-with-manual-swipe"
+            if "swipe" in reading_order or "horizontal" in reading_order
+            else "single-column"
         )
-    layout["density_curve"] = density
-    for item in migrated.get("media", {}).get("assets", []):
-        crop = str(item.get("crop", "")).strip()
-        lowered = crop.casefold()
-        if item.get("placement") == "cover" or "2.35" in lowered:
-            item["crop"] = "aspect-ratio:2.35"
-            if item.get("placement") == "cover":
-                item["required"] = True
-        elif "natural" in lowered:
-            item["crop"] = "natural"
-        else:
-            item["crop"] = "prepared"
+        modules = migrated.get("editorial", {}).get("module_sequence", [])
+        old_density = layout.get("density_curve", [])
+        density: list[str] = []
+        for index in range(len(modules)):
+            value = str(
+                old_density[index] if index < len(old_density) else "moderate"
+            ).casefold()
+            density.append(
+                next(
+                    (
+                        candidate
+                        for candidate in (
+                            "dominant",
+                            "dense",
+                            "open",
+                            "pause",
+                            "moderate",
+                        )
+                        if candidate in value
+                    ),
+                    "moderate",
+                )
+            )
+        layout["density_curve"] = density
+        for item in migrated.get("media", {}).get("assets", []):
+            crop = str(item.get("crop", "")).strip()
+            lowered = crop.casefold()
+            if item.get("placement") == "cover" or "2.35" in lowered:
+                item["crop"] = "aspect-ratio:2.35"
+                if item.get("placement") == "cover":
+                    item["required"] = True
+            elif "natural" in lowered:
+                item["crop"] = "natural"
+            else:
+                item["crop"] = "prepared"
+
+    previous_status = migrated.get("status")
+    migrated["schema_version"] = 4
+    if previous_status == "INCOMPLETE":
+        migrated["status"] = "EXPLORING"
+    direction_name = "Migrated selected design"
+    migrated.setdefault(
+        "exploration",
+        {
+            "directions": (
+                [
+                    {
+                        "name": direction_name,
+                        "thesis": "Preserve the existing article design during migration.",
+                        "signature_move": "Existing implementation",
+                        "compatibility_risk": "Retain previously reviewed behavior.",
+                    }
+                ]
+                if previous_status in {"PLANNED", "READY"}
+                else []
+            ),
+            "selected_direction": (
+                direction_name if previous_status in {"PLANNED", "READY"} else ""
+            ),
+            "selection_reason": (
+                "Migration preserves the already selected implementation."
+                if previous_status in {"PLANNED", "READY"}
+                else ""
+            ),
+        },
+    )
+    migrated.setdefault("delivery", {}).pop("mode", None)
+    migrated.setdefault("checks", {}).setdefault(
+        "implementation_extracted", previous_status in {"PLANNED", "READY"}
+    )
     exceptions = migrated.setdefault("exceptions", [])
     if not any(
         isinstance(item, dict) and item.get("code") == "legacy-contract-migration"
@@ -391,36 +455,72 @@ def validate_contract(
     required_status: str | None = None,
 ) -> None:
     errors: list[str] = []
-    if contract.get("schema_version") != 3:
-        errors.append("schema_version must be 3")
+    if contract.get("schema_version") != 4:
+        errors.append("schema_version must be 4")
 
     status = contract.get("status")
     if status not in STATUS_VALUES:
-        errors.append("status must be INCOMPLETE, PLANNED, or READY")
+        errors.append("status must be EXPLORING, PLANNED, or READY")
     if required_status is not None and status != required_status:
         errors.append(f"status must be {required_status}")
     if contract.get("scope") not in SCOPE_VALUES:
         errors.append("scope must be new-article or substantial-redesign")
     _text(contract.get("article_title"), "article_title", errors)
 
+    exploration = _mapping(contract.get("exploration"), "exploration", errors)
+    directions = _list(exploration.get("directions"), "exploration.directions", errors)
+    direction_names: set[str] = set()
+    if len(directions) > 3:
+        errors.append("exploration.directions supports at most three directions")
+    for index, value in enumerate(directions):
+        item = _mapping(value, f"exploration.directions[{index}]", errors)
+        name = _text(item.get("name"), f"exploration.directions[{index}].name", errors)
+        for key in ("thesis", "signature_move", "compatibility_risk"):
+            _text(item.get(key), f"exploration.directions[{index}].{key}", errors)
+        if name in direction_names:
+            errors.append(f"exploration.directions[{index}].name duplicates {name!r}")
+        direction_names.add(name)
+    selected_direction = _text(
+        exploration.get("selected_direction"),
+        "exploration.selected_direction",
+        errors,
+        allow_empty=status == "EXPLORING",
+    )
+    _text(
+        exploration.get("selection_reason"),
+        "exploration.selection_reason",
+        errors,
+        allow_empty=status == "EXPLORING",
+    )
+    if status in {"PLANNED", "READY"}:
+        if not directions:
+            errors.append("exploration.directions must contain the selected design")
+        if selected_direction not in direction_names:
+            errors.append("exploration.selected_direction must name one recorded direction")
+
     editorial = _mapping(contract.get("editorial"), "editorial", errors)
+    for key in ("reader", "topic", "desired_action", "evidence_boundary"):
+        _text(editorial.get(key), f"editorial.{key}", errors)
     for key in (
-        "reader",
         "narrator",
-        "topic",
-        "desired_action",
         "reader_situation",
         "central_friction",
         "judgment",
         "reader_gain",
-        "evidence_boundary",
         "dominant_module",
         "closing_job",
     ):
-        _text(editorial.get(key), f"editorial.{key}", errors)
+        _text(editorial.get(key), f"editorial.{key}", errors, allow_empty=True)
     _string_list(editorial.get("reasoning_path"), "editorial.reasoning_path", errors)
-    module_sequence = _string_list(
-        editorial.get("module_sequence"), "editorial.module_sequence", errors
+    module_sequence = (
+        _string_list(editorial.get("module_sequence"), "editorial.module_sequence", errors)
+        if status in {"PLANNED", "READY"}
+        else [
+            str(item)
+            for item in _list(
+                editorial.get("module_sequence"), "editorial.module_sequence", errors
+            )
+        ]
     )
 
     layout = _mapping(contract.get("layout"), "layout", errors)
@@ -461,7 +561,7 @@ def validate_contract(
     _text(layout.get("alignment_behavior"), "layout.alignment_behavior", errors)
 
     typography = _mapping(contract.get("typography"), "typography", errors)
-    indent = _number_range(
+    _number_range(
         typography.get("body_first_line_indent_em"),
         "typography.body_first_line_indent_em",
         0,
@@ -469,11 +569,6 @@ def validate_contract(
         errors,
     )
     exceptions = exception_map(contract)
-    if indent is not None and indent != 2.0 and "body-first-line-indent" not in exceptions:
-        errors.append(
-            "typography.body_first_line_indent_em defaults to 2; deviations require "
-            "a body-first-line-indent exception"
-        )
     _text(
         typography.get("role_relationships"),
         "typography.role_relationships",
@@ -487,7 +582,7 @@ def validate_contract(
             errors.append(f"typography.roles.{role} is not a supported role")
             continue
         item = _mapping(values, f"typography.roles.{role}", errors)
-        size_range, leading_range = TYPE_RANGES[role]
+        size_range, leading_range = HARD_TYPE_RANGES[role]
         _string_list(
             item.get("font_stack"),
             f"typography.roles.{role}.font_stack",
@@ -512,8 +607,15 @@ def validate_contract(
             errors.append(
                 f"typography.roles.{role}.alignment must be left, center, or right"
             )
-        if item.get("letter_spacing_px") != 0:
-            errors.append(f"typography.roles.{role}.letter_spacing_px must be 0")
+        letter_spacing = _number_range(
+            item.get("letter_spacing_px"),
+            f"typography.roles.{role}.letter_spacing_px",
+            -1,
+            4,
+            errors,
+        )
+        if role == "body" and letter_spacing is not None and letter_spacing != 0:
+            errors.append("typography.roles.body.letter_spacing_px must be 0")
         wrap = _text(item.get("wrap"), f"typography.roles.{role}.wrap", errors)
         if wrap and not re.fullmatch(
             r"(?:overflow-wrap|word-break|white-space):[^:;]+", wrap
@@ -621,7 +723,7 @@ def validate_contract(
         "content_native_motif",
         "recurrence_limit",
     ):
-        _text(geometry.get(key), f"geometry.{key}", errors)
+        _text(geometry.get(key), f"geometry.{key}", errors, allow_empty=True)
     geometry_roles = _list(geometry.get("used_roles"), "geometry.used_roles", errors)
     seen_geometry_roles: set[str] = set()
     for index, role in enumerate(geometry_roles):
@@ -640,8 +742,10 @@ def validate_contract(
     }
     for role, field in geometry_fields.items():
         decision = geometry.get(field)
-        active = isinstance(decision, str) and not re.match(
-            r"^\s*(?:N/A|none)\s*:", decision, re.IGNORECASE
+        active = (
+            isinstance(decision, str)
+            and bool(decision.strip())
+            and not re.match(r"^\s*(?:N/A|none)\s*:", decision, re.IGNORECASE)
         )
         if active and role not in seen_geometry_roles:
             errors.append(f"geometry.used_roles must include {role!r} for geometry.{field}")
@@ -684,22 +788,16 @@ def validate_contract(
         "compatibility_risk",
         "test_obligation",
     ):
-        _text(effects.get(key), f"effects.{key}", errors)
+        _text(
+            effects.get(key),
+            f"effects.{key}",
+            errors,
+            allow_empty=effects.get("kind") == "none",
+        )
     if type(effects.get("user_review_after_draft")) is not bool:
         errors.append("effects.user_review_after_draft must be a boolean")
-    if effects.get("kind") != "none" and effects.get("user_review_after_draft") is not True:
-        errors.append("expressive effects require user_review_after_draft=true")
 
     delivery = _mapping(contract.get("delivery"), "delivery", errors)
-    if delivery.get("mode") not in {"steady", "creative"}:
-        errors.append("delivery.mode must be steady or creative")
-    if effects.get("kind") != "none" and delivery.get("mode") != "creative":
-        errors.append("static-css and svg-smil effects require delivery.mode=creative")
-    if (
-        delivery.get("mode") == "creative"
-        and effects.get("user_review_after_draft") is not True
-    ):
-        errors.append("creative delivery requires effects.user_review_after_draft=true")
     if type(delivery.get("backend_ready")) is not bool:
         errors.append("delivery.backend_ready must be a boolean")
     if delivery.get("target") not in {"direct-draft", "local-preview"}:
@@ -774,11 +872,19 @@ def validate_contract(
         seen_codes.add(code)
 
     checks = _mapping(contract.get("checks"), "checks", errors)
-    for key in ("editorial_passed", "design_values_verified"):
+    for key in (
+        "editorial_passed",
+        "design_values_verified",
+        "implementation_extracted",
+    ):
         if type(checks.get(key)) is not bool:
             errors.append(f"checks.{key} must be a boolean")
     if status in {"PLANNED", "READY"}:
-        for key in ("editorial_passed", "design_values_verified"):
+        for key in (
+            "editorial_passed",
+            "design_values_verified",
+            "implementation_extracted",
+        ):
             if checks.get(key) is not True:
                 errors.append(f"checks.{key} must be true for {status}")
     digest = checks.get("fragment_sha256")
@@ -793,6 +899,99 @@ def validate_contract(
         raise ContractError("design contract is invalid:\n- " + "\n- ".join(errors))
 
 
+def contract_warnings(contract: dict[str, Any]) -> list[dict[str, object]]:
+    """Return non-blocking design guidance after structural validation."""
+    warnings: list[dict[str, object]] = []
+    acknowledged = exception_map(contract)
+
+    def add(code: str, path: str, message: str) -> None:
+        reason = acknowledged.get(code)
+        finding: dict[str, object] = {
+            "code": code,
+            "severity": "warning",
+            "path": path,
+            "message": message,
+            "acknowledged": bool(reason),
+        }
+        if reason:
+            finding["exception_reason"] = reason
+        warnings.append(finding)
+
+    exploration = contract.get("exploration", {})
+    directions = exploration.get("directions", []) if isinstance(exploration, dict) else []
+    if isinstance(directions, list) and len(directions) < 2:
+        add(
+            "limited-design-exploration",
+            "exploration.directions",
+            "Only one design direction was recorded; two or three lightweight alternatives usually improve originality.",
+        )
+
+    editorial = contract.get("editorial", {})
+    if isinstance(editorial, dict) and not str(editorial.get("dominant_module", "")).strip():
+        add(
+            "missing-dominant-module",
+            "editorial.dominant_module",
+            "No dominant module is recorded; confirm that the selected composition still has a clear visual peak.",
+        )
+
+    typography = contract.get("typography", {})
+    roles = typography.get("roles", {}) if isinstance(typography, dict) else {}
+    if isinstance(roles, dict):
+        for role, values in roles.items():
+            if role == "body" or role not in TYPE_RANGES or not isinstance(values, dict):
+                continue
+            size_range, leading_range = TYPE_RANGES[role]
+            size = values.get("font_size_px")
+            leading = values.get("line_height")
+            if (
+                isinstance(size, (int, float))
+                and isinstance(leading, (int, float))
+                and not isinstance(size, bool)
+                and not isinstance(leading, bool)
+                and (
+                    not size_range[0] <= float(size) <= size_range[1]
+                    or not leading_range[0] <= float(leading) <= leading_range[1]
+                )
+            ):
+                add(
+                    "typography-recommended-range",
+                    f"typography.roles.{role}",
+                    f"Role {role!r} is outside the usual mobile range; keep it when the selected composition remains readable.",
+                )
+            spacing = values.get("letter_spacing_px")
+            if (
+                isinstance(spacing, (int, float))
+                and not isinstance(spacing, bool)
+                and not -0.5 <= float(spacing) <= 2.5
+            ):
+                add(
+                    "letter-spacing-recommended-range",
+                    f"typography.roles.{role}.letter_spacing_px",
+                    f"Role {role!r} uses pronounced tracking; inspect the longest final string on a phone.",
+                )
+
+    indent = typography.get("body_first_line_indent_em") if isinstance(typography, dict) else None
+    if indent != 2.0:
+        add(
+            "body-first-line-indent",
+            "typography.body_first_line_indent_em",
+            "Marked continuous-prose paragraphs default to a two-character first-line indent; this article uses another recorded convention.",
+        )
+
+    effects = contract.get("effects", {})
+    if (
+        isinstance(effects, dict)
+        and effects.get("kind") != "none"
+        and effects.get("user_review_after_draft") is not True
+    ):
+        add(
+            "effect-editor-review",
+            "effects.user_review_after_draft",
+            "The selected effect is allowed under the unified capability model, but the final draft should still be inspected in WeChat.",
+        )
+    return warnings
+
+
 def render_contract_markdown(contract: dict[str, Any]) -> str:
     def block(value: Any) -> str:
         return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=False)
@@ -804,6 +1003,12 @@ This file is generated from `design-contract.json`. Do not edit it directly.
 - Article: {contract.get('article_title', '')}
 - Scope: {contract.get('scope', '')}
 - Status: {contract.get('status', '')}
+
+## Design exploration
+
+```json
+{block(contract.get('exploration', {}))}
+```
 
 ## Editorial and structure
 

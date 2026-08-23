@@ -23,6 +23,7 @@ try:
     from . import article_workspace, wechat_console_api
     from .design_contract import (
         ContractError,
+        contract_warnings,
         fragment_sha256,
         load_contract,
         validate_contract,
@@ -32,6 +33,7 @@ except ImportError:
     import wechat_console_api  # type: ignore[no-redef]
     from design_contract import (  # type: ignore[no-redef]
         ContractError,
+        contract_warnings,
         fragment_sha256,
         load_contract,
         validate_contract,
@@ -382,7 +384,16 @@ def _run_audits(
         audit_article["content"] = article_workspace._extract_fragment(fragment_file)
         metadata_path.write_bytes(_json_bytes(audit_article))
         contract_path.write_bytes(_json_bytes(contract))
-        results: list[dict[str, Any]] = []
+        guidance = contract_warnings(contract)
+        results: list[dict[str, Any]] = [
+            {
+                "audit": "design-contract-guidance",
+                "ok": True,
+                "error_count": 0,
+                "warning_count": len(guidance),
+                "findings": guidance,
+            }
+        ]
         audit_environment = os.environ.copy()
         audit_environment["PYTHONUTF8"] = "1"
         audit_environment["PYTHONIOENCODING"] = "utf-8"
