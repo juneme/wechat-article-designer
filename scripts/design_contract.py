@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create, validate, and render machine-readable article design contracts."""
+"""Legacy v2/v3 design-contract compatibility and migration diagnostics."""
 
 from __future__ import annotations
 

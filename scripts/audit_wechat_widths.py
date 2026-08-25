@@ -11,21 +11,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-try:
-    from .design_contract import (
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
-except ImportError:
-    from design_contract import (  # type: ignore[no-redef]
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
-
 PERCENTAGE = re.compile(r"^([0-9]+(?:\.[0-9]+)?)%$")
 PIXELS = re.compile(r"^([0-9]+(?:\.[0-9]+)?)px$")
 HARD_WIDTH_PX = 320.0
@@ -263,7 +248,6 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Detect widths that exceed the hard 320px WeChat limit"
     )
     parser.add_argument("article", help="HTML or article JSON path")
-    parser.add_argument("--contract", type=Path, required=True)
     return parser
 
 
@@ -273,24 +257,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if not path.is_file():
             raise ValueError(f"article file does not exist: {args.article}")
-        contract = load_contract(args.contract)
-        validate_contract(contract, required_status="READY")
-        acknowledged = exception_map(contract)
         findings = audit_html(_article_html(path))
-        for finding in findings:
-            if finding["severity"] != "warning":
-                finding["acknowledged"] = False
-                continue
-            reason = acknowledged.get(str(finding["code"]))
-            finding["severity"] = "warning" if reason else "error"
-            finding["acknowledged"] = bool(reason)
-            if reason:
-                finding["exception_reason"] = reason
     except (
         OSError,
         UnicodeError,
         json.JSONDecodeError,
-        ContractError,
         ValueError,
     ) as exc:
         print(

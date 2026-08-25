@@ -1,117 +1,111 @@
 # Article Workspaces
 
-Use one versioned workspace per article so assets, preview state, draft payloads, and revisions do not overwrite another article.
-
-New articles and substantial redesigns must pass the complete writing-and-design workflow. A correction or minor revision reuses the existing contract, updates the affected fields, and reruns every audit affected by the changed body, metadata, contract, asset, or preview state.
+Use one workspace per article so copy, media, metadata, route state, and revisions remain isolated. `work/`, caches, experiments, and unrelated test data are never article or release content.
 
 ## Create
 
-Create the workspace before generating article assets:
+Use `--no-preview` only when the three console variables exist and the health check succeeds. Otherwise create the local-preview route.
 
 ```powershell
-python scripts/article_workspace.py create --title '文章标题' --date 'YYYY-MM-DD'
+python scripts/article_workspace.py create --title "文章标题" --date YYYY-MM-DD --no-preview
+python scripts/article_workspace.py create --title "文章标题" --date YYYY-MM-DD
 ```
 
-Resolve backend readiness first. When all console variables are present and `status` is healthy, create the direct-draft workspace without a local preview unless the user explicitly requested one:
-
-```powershell
-python scripts/article_workspace.py create --title '文章标题' --date 'YYYY-MM-DD' --no-preview
-```
-
-The command creates the next available path under `articles/`:
+The generated layout is:
 
 ```text
-articles/YYYY-MM-DD_标题/
+articles/YYYY-MM-DD_title/
 ├── article.json
-├── design-contract.json      # canonical machine-readable source
-├── design-contract.md        # generated private reading view
 ├── fragment.html
-├── preview.html              # local-preview route only
+├── release-manifest.json
 ├── manifest.json
+├── preview.html              # local-preview route only
 ├── assets/
 └── revisions/
 ```
 
-The directory name is safe on Windows. A repeated title receives a numeric suffix instead of reusing or overwriting an existing article.
+`fragment.html` is the editable publishable source. `article.json` holds WeChat draft metadata. `release-manifest.json` contains only media and delivery operations. It does not describe or constrain typography, palette, geometry, modules, spacing, effects, or visual intent.
 
-## Work in one source of truth
+## Compose
 
-- Write candidate and selected publishable HTML in `fragment.html`, inside the two boundary comments. Exploration may happen before the first `plan`; this is the intended way to compare real compositions instead of freezing guesses.
-- Edit factual, editorial, media-authority, delivery, and exploration decisions in `design-contract.json` while its status is `EXPLORING`. After selecting the implementation, run `plan`: it extracts machine-observable design values, including typography variants and semantic spacing scales, while retaining authored geometry descriptions; then it sets `PLANNED` and regenerates `design-contract.md`. The release command alone sets `READY` and generates `checks.fragment_sha256`; never fill that binding manually or edit generated Markdown.
-- Store local source images in `assets/`; final body image URLs still come from the console server.
-- Edit title, author, digest, comment flags, and cover `media_id` in `article.json`.
-- Treat `preview.html` as generated fallback output. It is created for the local-preview route and intentionally has no clipboard controls or scripts.
-- Never store console credentials in any workspace file.
+Write and design directly in `fragment.html` between the two boundary comments. No planning command or design state is required before editing or release. Use `data-media-id` only when a local body image must be uploaded and replaced. Use `data-indent-role="body-paragraph"` only on ordinary prose paragraphs that declare `text-indent:2em`.
 
-The boundary comments are extraction markers for local audits and workspace synchronization. They do not imply a clipboard workflow.
+If a private design note helps the current task, keep it outside publishable copy. The optional command below generates a descriptive report after composition:
 
-## Migrate an existing workspace
+```powershell
+python scripts/article_workspace.py inspect '.\articles\日期_标题'
+```
 
-Schema-2 and schema-3 workspaces are preserved through one transactional command:
+The report is versioned but never validated as a design target. The legacy `plan` command is an alias for `inspect` and no longer freezes state.
+
+## Synchronize
+
+The release orchestrator synchronizes automatically. Manual synchronization is available for diagnostics:
+
+```powershell
+python scripts/article_workspace.py sync '.\articles\日期_标题'
+```
+
+Synchronization:
+
+1. extracts the exact boundary fragment into `article.json.content`;
+2. validates operational media fields;
+3. creates or removes `preview.html` according to the selected route;
+4. increments the article revision when body, metadata, operational media, assets, preview state, optional report, or preserved legacy design files change;
+5. rotates `request_id` only when the draft payload changes;
+6. writes one complete revision snapshot;
+7. restores all root files if writing or snapshot creation fails.
+
+Runtime submission locks are persisted immediately and are not a substitute for a content revision.
+
+## Operational media
+
+Each `release-manifest.json` item contains:
+
+```json
+{
+  "name": "lead-image",
+  "placement": "body",
+  "required": true,
+  "state": "supplied-local",
+  "source_path": "lead.jpg",
+  "remote_ref": ""
+}
+```
+
+Names are unique machine identifiers. `source_path` is relative to `assets/`. A body item maps to exactly one `<img data-media-id="lead-image">`. A cover has `placement:"cover"` and no body marker.
+
+## Legacy migration
+
+Upgrade a v2/v3 workspace before release:
 
 ```powershell
 python scripts/article_workspace.py migrate '.\articles\日期_标题'
 ```
 
-The command upgrades both the workspace and design contract to schema 4, creates a revision snapshot, and never submits a draft. A schema-2 workspace without a prior design contract receives an `EXPLORING` substantial-redesign contract. A migrated schema-2 or schema-3 design contract records `legacy-contract-migration`; it may support a minor revision, but remove that exception and complete every new machine relationship on the next substantial redesign.
+Migration creates `release-manifest.json` from the legacy contract's media array, upgrades the workspace manifest, and snapshots the result. Existing `design-contract.json` and `design-contract.md` stay untouched as private history. They no longer need a particular status and cannot block release.
 
-## Synchronize and version
+## Draft lock
 
-After selecting and implementing the strongest candidate, extract, validate, freeze, and version the `PLANNED` contract:
+Before sending a draft, release stores `submitting`. A timeout, `502`, pending, unknown response, interruption, or unconfirmed response becomes `ambiguous`. Both states block synchronization, retry, and preview fallback because a duplicate draft may already exist.
 
-```powershell
-python scripts/article_workspace.py plan '.\articles\日期_标题'
-```
-
-After changing the fragment or article metadata, use the enforced delivery entrypoint:
+After the user inspects the real draft box:
 
 ```powershell
-python scripts/release_article.py deliver '.\articles\日期_标题'
+python scripts/article_workspace.py resolve-draft WORKSPACE --outcome created
+python scripts/article_workspace.py resolve-draft WORKSPACE --outcome not-created
 ```
 
-The `plan` result includes non-blocking design warnings. The release command audits local content before any external mutation and then synchronizes:
+Do not edit `manifest.json` by hand to clear the lock.
 
-1. refuses to continue when the canonical JSON contract, recorded plan hash, generated fragment hash, structural markers, publishable metadata, or required gate is incomplete;
-2. extracts the publishable fragment into `article.json.content`;
-3. regenerates `preview.html` only when the workspace uses the local-preview route;
-4. computes the draft payload hash;
-5. creates a new idempotent `request_id` only when draft payload data changed;
-6. creates a revision when body, metadata, JSON contract, generated Markdown contract, assets, or preview state changed;
-7. stores the complete prepared state under `revisions/rNNN_<timestamp>/` through one rollback-capable transaction.
-
-The release command automatically enables fallback when the backend becomes unavailable before draft submission. The following command is a recovery diagnostic, not the normal delivery path:
+## Independent postflight checks
 
 ```powershell
-python scripts/article_workspace.py sync '.\articles\日期_标题' --preview
+python scripts/audit_wechat_markup.py fragment.html
+python scripts/audit_audience_boundary.py article.json
+python scripts/audit_wechat_widths.py fragment.html
+python scripts/audit_wechat_typography.py fragment.html
+python scripts/audit_wechat_contrast.py fragment.html
 ```
 
-Do not use manual sync to bypass release audits. Never switch to local preview or resubmit after an ambiguous draft result.
-
-Before draft submission, the release command writes a `submitting` lock to `manifest.json`. A timeout, interruption, pending result, unknown result, or unconfirmed response leaves the workspace locked. After the user checks the real draft box, resolve it explicitly:
-
-```powershell
-python scripts/article_workspace.py resolve-draft '.\articles\日期_标题' --outcome created
-python scripts/article_workspace.py resolve-draft '.\articles\日期_标题' --outcome not-created
-```
-
-Use exactly one outcome. `not-created` authorizes a later retry; `created` preserves the confirmed result and prevents an unchanged payload from being submitted again.
-
-Running sync again without any tracked change preserves both revision and `request_id`. A contract, asset, or preview-only change creates a revision but preserves `request_id`; a draft payload change creates both a revision and a new ID. Reuse remains subject to the direct-publishing failure rules.
-
-## Validate and deliver
-
-`release_article.py deliver` runs the following audits, including structural contract matching, before validating the synchronized payload:
-
-```powershell
-python scripts/audit_wechat_markup.py '.\articles\...\fragment.html' --contract '.\articles\...\design-contract.json'
-python scripts/audit_audience_boundary.py '.\articles\...\article.json' --contract '.\articles\...\design-contract.json'
-python scripts/audit_wechat_widths.py '.\articles\...\fragment.html' --contract '.\articles\...\design-contract.json'
-python scripts/audit_wechat_typography.py '.\articles\...\fragment.html' --contract '.\articles\...\design-contract.json'
-python scripts/audit_wechat_contrast.py '.\articles\...\fragment.html' --contract '.\articles\...\design-contract.json'
-python scripts/audit_design_contract.py '.\articles\...\fragment.html' --contract '.\articles\...\design-contract.json'
-python scripts/wechat_console_api.py validate-draft --article '.\articles\...\article.json'
-```
-
-Run `validate-draft` only for a direct route with final hosted body images and cover media. On the preview route, all six local audits and mobile inspection are the delivery gate.
-
-SVG components follow `references/svg-design-genes.md` and use the same workspace, synchronization, and draft-validation path as the rest of the article. Draft creation remains governed by `references/direct-publishing.md`.
+Warnings document editor uncertainty or a recommendation. Errors identify an unsafe, unreadable, overflowing, private, or operationally invalid result. Only errors block release.

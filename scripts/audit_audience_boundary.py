@@ -11,21 +11,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-try:
-    from .design_contract import (
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
-except ImportError:
-    from design_contract import (  # type: ignore[no-redef]
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
-
 PATTERNS = (
     (
         "instruction-echo",
@@ -167,26 +152,19 @@ def _article_text(path: Path) -> str:
 
 def audit_text(
     value: str,
-    *,
-    acknowledged: dict[str, str] | None = None,
 ) -> list[dict[str, str | bool]]:
     normalized = re.sub(r"\s+", " ", value).strip()
-    exceptions = acknowledged or {}
     findings: list[dict[str, str | bool]] = []
     for code, pattern in PATTERNS:
         for match in pattern.finditer(normalized):
             start = max(0, match.start() - 28)
             end = min(len(normalized), match.end() + 28)
-            is_acknowledged = code in exceptions
             finding: dict[str, str | bool] = {
                 "code": code,
-                "severity": "warning" if is_acknowledged else "error",
-                "acknowledged": is_acknowledged,
+                "severity": "error",
                 "match": match.group(0),
                 "context": normalized[start:end],
             }
-            if is_acknowledged:
-                finding["exception_reason"] = exceptions[code]
             findings.append(finding)
     return findings
 
@@ -196,7 +174,6 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Detect agent-workflow residue in article copy and workspace HTML"
     )
     parser.add_argument("article", help="HTML, text, or article JSON path")
-    parser.add_argument("--contract", type=Path, required=True)
     return parser
 
 
@@ -206,15 +183,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if not path.is_file():
             raise ValueError(f"article file does not exist: {args.article}")
-        contract = load_contract(args.contract)
-        validate_contract(contract, required_status="READY")
-        acknowledged = exception_map(contract)
-        findings = audit_text(_article_text(path), acknowledged=acknowledged)
+        findings = audit_text(_article_text(path))
     except (
         OSError,
         UnicodeError,
         json.JSONDecodeError,
-        ContractError,
         ValueError,
     ) as exc:
         print(

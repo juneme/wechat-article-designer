@@ -27,9 +27,12 @@ ARTICLE_ARTIFACTS = {
     "article.json",
     "design-contract.json",
     "design-contract.md",
+    "design-report.json",
+    "design-report.md",
     "fragment.html",
     "manifest.json",
     "preview.html",
+    "release-manifest.json",
 }
 TRANSCRIPT_NAMES = re.compile(
     r"(?:^|[-_])(?:chat|conversation|transcript|对话|聊天)(?:[-_]|$)",

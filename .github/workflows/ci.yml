@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
 
-      - name: Validate skill package
+      - name: Validate skill package and v4 regressions
         run: python scripts/quick_validate.py .
 
       - name: Parse scripts without cache output

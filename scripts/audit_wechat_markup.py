@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit WeChat fragment markup, inline CSS, URLs, and editor compatibility."""
+"""Audit publishable WeChat markup without judging its visual style."""
 
 from __future__ import annotations
 
@@ -11,41 +11,35 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-try:
-    from .design_contract import (
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
-except ImportError:
-    from design_contract import (  # type: ignore[no-redef]
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
-
 START = "<!-- 微信公众号复制开始 -->"
 END = "<!-- 微信公众号复制结束 -->"
 HTML_TAGS = {
     "a",
+    "b",
     "blockquote",
     "br",
+    "div",
     "em",
+    "figcaption",
+    "figure",
     "h1",
     "h2",
     "h3",
     "h4",
     "h5",
     "h6",
+    "hr",
+    "i",
     "img",
     "li",
     "ol",
     "p",
     "section",
+    "small",
     "span",
     "strong",
+    "sub",
+    "sup",
     "table",
     "tbody",
     "td",
@@ -53,82 +47,94 @@ HTML_TAGS = {
     "th",
     "thead",
     "tr",
+    "u",
     "ul",
 }
 SVG_TAGS = {
     "animate",
+    "animatemotion",
     "animatetransform",
     "circle",
     "clippath",
     "defs",
     "desc",
     "ellipse",
+    "feblend",
+    "fecolormatrix",
+    "fecomponenttransfer",
+    "fecomposite",
+    "fedisplacementmap",
+    "fedropshadow",
+    "feflood",
+    "fefunca",
+    "fefuncb",
+    "fefuncg",
+    "fefuncr",
+    "fegaussianblur",
+    "feimage",
+    "femerge",
+    "femergenode",
+    "feoffset",
+    "filter",
     "g",
     "image",
     "line",
+    "lineargradient",
+    "marker",
     "mask",
+    "mpath",
     "path",
+    "pattern",
     "polygon",
     "polyline",
+    "radialgradient",
     "rect",
     "set",
+    "stop",
     "svg",
+    "symbol",
     "text",
+    "textpath",
     "title",
     "tspan",
+    "use",
 }
 ALLOWED_TAGS = HTML_TAGS | SVG_TAGS
-VOID_TAGS = {"br", "img"}
-GLOBAL_ATTRIBUTES = {
-    "aria-label",
-    "aria-labelledby",
-    "data-content-kind",
-    "data-density",
-    "data-caption-for",
-    "data-geometry-role",
-    "data-indent-role",
-    "data-layout-role",
-    "data-media-crop",
-    "data-media-id",
-    "data-module-id",
-    "data-spacing-role",
-    "data-type-role",
-    "id",
-    "role",
+VOID_TAGS = {"br", "hr", "img"}
+PROHIBITED_TAGS = {
+    "audio",
+    "base",
+    "body",
+    "button",
+    "embed",
+    "foreignobject",
+    "form",
+    "head",
+    "html",
+    "iframe",
+    "input",
+    "link",
+    "meta",
+    "object",
+    "option",
+    "script",
+    "select",
+    "source",
     "style",
-    "title",
+    "textarea",
+    "video",
 }
-TAG_ATTRIBUTES = {
-    "a": {"href", "rel", "target"},
-    "img": {"alt", "height", "src", "width"},
-    "ol": {"reversed", "start", "type"},
-    "li": {"value"},
-    "td": {"colspan", "rowspan"},
-    "th": {"colspan", "rowspan", "scope"},
-    "svg": {"fill", "height", "preserveaspectratio", "stroke", "viewbox", "width", "xmlns", "xmlns:xlink"},
-    "g": {"fill", "opacity", "stroke", "stroke-width", "transform"},
-    "path": {"d", "fill", "fill-rule", "opacity", "pathlength", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform"},
-    "circle": {"cx", "cy", "fill", "opacity", "r", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform"},
-    "ellipse": {"cx", "cy", "fill", "opacity", "rx", "ry", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform"},
-    "rect": {"fill", "height", "opacity", "rx", "ry", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform", "width", "x", "y"},
-    "line": {"opacity", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform", "x1", "x2", "y1", "y2"},
-    "polyline": {"fill", "opacity", "points", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform"},
-    "polygon": {"fill", "opacity", "points", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-width", "transform"},
-    "text": {"dominant-baseline", "fill", "font-family", "font-size", "font-weight", "text-anchor", "transform", "x", "y"},
-    "tspan": {"dx", "dy", "fill", "font-family", "font-size", "font-weight", "text-anchor", "x", "y"},
-    "image": {"height", "href", "preserveaspectratio", "width", "x", "xlink:href", "y"},
-    "clippath": {"clippathunits", "transform"},
-    "mask": {"height", "maskunits", "width", "x", "y"},
-    "animate": {"accumulate", "additive", "attributename", "begin", "calcmode", "dur", "fill", "from", "href", "keytimes", "keysplines", "repeatcount", "restart", "to", "values", "xlink:href"},
-    "animatetransform": {"accumulate", "additive", "attributename", "begin", "calcmode", "dur", "fill", "from", "href", "keytimes", "keysplines", "repeatcount", "restart", "to", "type", "values", "xlink:href"},
-    "set": {"attributename", "begin", "dur", "fill", "href", "restart", "to", "xlink:href"},
-}
-ALLOWED_CSS = {
+KNOWN_CSS = {
+    "align-content",
     "align-items",
+    "align-self",
     "aspect-ratio",
     "background",
     "background-color",
     "background-image",
+    "background-position",
+    "background-repeat",
+    "background-size",
     "border",
     "border-bottom",
     "border-color",
@@ -141,16 +147,20 @@ ALLOWED_CSS = {
     "box-shadow",
     "box-sizing",
     "color",
+    "column-gap",
     "display",
+    "filter",
     "flex",
     "flex-basis",
     "flex-direction",
+    "flex-flow",
     "flex-grow",
     "flex-shrink",
     "flex-wrap",
     "font-family",
     "font-size",
     "font-style",
+    "font-variant",
     "font-weight",
     "gap",
     "height",
@@ -178,9 +188,11 @@ ALLOWED_CSS = {
     "padding-left",
     "padding-right",
     "padding-top",
+    "row-gap",
     "text-align",
     "text-decoration",
     "text-indent",
+    "text-overflow",
     "text-shadow",
     "text-transform",
     "transform",
@@ -189,17 +201,7 @@ ALLOWED_CSS = {
     "white-space",
     "width",
     "word-break",
-    "writing-mode",
-}
-DENIED_CSS_PREFIXES = ("animation", "grid", "position", "transition")
-CONDITIONAL_CSS = {
-    "aspect-ratio",
-    "box-shadow",
-    "opacity",
-    "object-fit",
-    "object-position",
-    "text-shadow",
-    "transform",
+    "word-spacing",
     "writing-mode",
 }
 
@@ -218,13 +220,13 @@ def _style_declarations(raw: str) -> list[tuple[str, str]]:
 
 
 class MarkupParser(HTMLParser):
+    """Collect hard safety failures and advisory editor-compatibility warnings."""
+
     def __init__(self, *, allow_media_placeholders: bool = False) -> None:
         super().__init__(convert_charrefs=True)
         self.allow_media_placeholders = allow_media_placeholders
         self.stack: list[tuple[str, int]] = []
         self.findings: list[dict[str, object]] = []
-        self.tags: set[str] = set()
-        self.expressive_css_used = False
 
     def add(
         self,
@@ -244,58 +246,81 @@ class MarkupParser(HTMLParser):
         )
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.lower()
         line = self.getpos()[0]
-        self.tags.add(tag)
-        if tag not in ALLOWED_TAGS:
-            self.add("tag-not-allowed", line, f"Tag <{tag}> is not allowed.")
+        if tag in PROHIBITED_TAGS:
+            self.add("active-or-external-content", line, f"Tag <{tag}> is prohibited.")
+        elif tag not in ALLOWED_TAGS:
+            self.add(
+                "unknown-element",
+                line,
+                f"Tag <{tag}> is not in the tested WeChat vocabulary.",
+                warning=True,
+            )
         if tag == "table":
             self.add(
                 "real-table-editor-test",
                 line,
-                "A real data table requires exact editor and phone testing.",
+                "A real table needs exact editor and phone testing.",
                 warning=True,
             )
 
-        names = [name for name, _ in attrs]
+        names = [name.lower() for name, _ in attrs]
         if len(names) != len(set(names)):
             self.add("duplicate-attribute", line, f"Tag <{tag}> has duplicate attributes.")
-        allowed = GLOBAL_ATTRIBUTES | TAG_ATTRIBUTES.get(tag, set())
-        for name, raw_value in attrs:
+        for raw_name, raw_value in attrs:
+            name = raw_name.lower()
             value = raw_value or ""
             if name.startswith("on") or name in {"contenteditable", "srcdoc"}:
                 self.add("unsafe-attribute", line, f"Attribute {name} is prohibited.")
-                continue
-            if name not in allowed:
-                self.add(
-                    "attribute-not-allowed",
-                    line,
-                    f"Attribute {name} is not allowlisted for <{tag}>.",
-                )
+            if name in {"href", "src", "xlink:href"} and re.match(
+                r"^(?:data|file|javascript|vbscript):", value, re.IGNORECASE
+            ):
+                self.add("unsafe-url", line, f"Attribute {name} uses an unsafe URL.")
             if name == "style":
                 self._audit_style(value, line)
-            if tag in {"img", "image"} and name in {"src", "href", "xlink:href"}:
+            if tag in {"img", "image", "feimage"} and name in {
+                "src",
+                "href",
+                "xlink:href",
+            }:
                 placeholder = value.lower().startswith("wechat-media://")
-                if not value.lower().startswith("https://") and not (
+                internal_svg = value.startswith("#")
+                if not value.lower().startswith("https://") and not internal_svg and not (
                     self.allow_media_placeholders and placeholder
                 ):
                     self.add(
                         "non-hosted-image",
                         line,
-                        "Article images must use final HTTPS URLs.",
+                        "Publishable images must use final HTTPS URLs.",
                     )
             if tag == "a" and name == "href" and not re.match(
                 r"^(?:https://|mailto:|tel:|#)", value, re.IGNORECASE
             ):
-                self.add("unsafe-link", line, "Links must use HTTPS, mailto, tel, or a fragment.")
-            if tag in {"animate", "animatetransform", "set"} and name == "begin":
-                if re.search(r"(?:click|mouse|focus|touch)", value, re.IGNORECASE):
+                self.add(
+                    "unsafe-link",
+                    line,
+                    "Links must use HTTPS, mailto, tel, or a fragment.",
+                )
+            if tag in {"mpath", "textpath", "use"} and name in {
+                "href",
+                "xlink:href",
+            } and not value.startswith("#"):
+                self.add(
+                    "external-svg-reference",
+                    line,
+                    "SVG references must target an element in the same fragment.",
+                )
+            if tag in {"animate", "animatemotion", "animatetransform", "set"}:
+                if name == "begin" and re.search(
+                    r"(?:click|mouse|focus|touch)", value, re.IGNORECASE
+                ):
                     self.add(
                         "interaction-dependent-motion",
                         line,
-                        "Interaction-triggered SMIL requires an exact editor test and readable fallback.",
+                        "Interaction-triggered SVG motion needs a readable initial state.",
                         warning=True,
                     )
-
         if tag not in VOID_TAGS:
             self.stack.append((tag, line))
 
@@ -303,10 +328,11 @@ class MarkupParser(HTMLParser):
         self, tag: str, attrs: list[tuple[str, str | None]]
     ) -> None:
         self.handle_starttag(tag, attrs)
-        if tag not in VOID_TAGS:
+        if tag.lower() not in VOID_TAGS:
             self.handle_endtag(tag)
 
     def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
         line = self.getpos()[0]
         if not self.stack:
             self.add("unexpected-closing-tag", line, f"Unexpected closing tag </{tag}>.")
@@ -326,21 +352,26 @@ class MarkupParser(HTMLParser):
 
     def handle_comment(self, data: str) -> None:
         if data.strip() not in {"微信公众号复制开始", "微信公众号复制结束"}:
-            self.add("comment-not-allowed", self.getpos()[0], "Only boundary comments are allowed.")
+            self.add(
+                "comment-not-allowed",
+                self.getpos()[0],
+                "Private comments must not enter publishable copy.",
+            )
 
     def handle_data(self, data: str) -> None:
         if data.strip() and not self.stack:
             self.add(
                 "text-outside-element",
                 self.getpos()[0],
-                "Visible fragment text must be inside an allowlisted element.",
+                "Visible fragment text must be inside an element.",
             )
 
     def handle_decl(self, decl: str) -> None:
-        self.add("document-wrapper", self.getpos()[0], "Fragments cannot contain a document declaration.")
-
-    def unknown_decl(self, data: str) -> None:
-        self.add("unknown-declaration", self.getpos()[0], "Unknown HTML declaration.")
+        self.add(
+            "document-wrapper",
+            self.getpos()[0],
+            "Publishable content must be an HTML fragment, not a document.",
+        )
 
     def close(self) -> None:
         super().close()
@@ -351,60 +382,63 @@ class MarkupParser(HTMLParser):
     def _audit_style(self, raw: str, line: int) -> None:
         if re.search(r"@(?:keyframes|import|font-face)", raw, re.IGNORECASE):
             self.add("css-rule-not-allowed", line, "CSS at-rules are prohibited.")
-        if re.search(r"(?:expression|javascript:|url\s*\(|var\s*\()", raw, re.IGNORECASE):
-            self.add("unsafe-css-value", line, "CSS URL, expression, or variable syntax is prohibited.")
+        if re.search(
+            r"(?:expression\s*\(|javascript:|url\s*\(|var\s*\()",
+            raw,
+            re.IGNORECASE,
+        ):
+            self.add(
+                "unsafe-css-value",
+                line,
+                "CSS URLs, expressions, and variables are prohibited.",
+            )
         for name, value in _style_declarations(raw):
             if not name:
-                self.add("invalid-css-declaration", line, f"Invalid CSS declaration {value!r}.")
+                self.add(
+                    "invalid-css-declaration",
+                    line,
+                    f"Invalid CSS declaration {value!r}.",
+                )
                 continue
-            if name.startswith(DENIED_CSS_PREFIXES) or name in {
+            lowered = value.lower()
+            if name == "display" and lowered == "grid":
+                self.add("css-grid-prohibited", line, "CSS Grid is not reliable in WeChat.")
+            if name == "position" and lowered in {"absolute", "fixed", "sticky"}:
+                self.add(
+                    "positioned-layout-prohibited",
+                    line,
+                    f"Position {lowered} is not reliable in WeChat.",
+                )
+            if name.startswith("animation") or name.startswith("transition"):
+                self.add(
+                    "css-motion-not-publishable",
+                    line,
+                    f"CSS property {name} requires a style block and is not publishable.",
+                )
+            if name not in KNOWN_CSS and name not in {
                 "bottom",
                 "inset",
                 "left",
+                "position",
                 "right",
                 "top",
                 "z-index",
             }:
-                self.add("css-property-prohibited", line, f"CSS property {name} is prohibited.")
-                continue
-            if name not in ALLOWED_CSS:
                 self.add(
-                    "unknown-css-property",
+                    "untested-css-property",
                     line,
-                    f"CSS property {name} is outside the compatibility allowlist.",
+                    f"CSS property {name} needs exact editor testing.",
                     warning=True,
                 )
-            if name == "display" and value.strip().lower() == "grid":
-                self.add("css-grid-prohibited", line, "CSS Grid is prohibited.")
-            conditional = name in CONDITIONAL_CSS
-            conditional = conditional or (
-                name == "display" and value.strip().lower() in {"flex", "inline-flex"}
-            )
-            conditional = conditional or (
-                name in {"background", "background-image"}
-                and "gradient(" in value.lower()
-            )
-            conditional = conditional or (
-                name == "overflow-x" and value.strip().lower() in {"auto", "scroll"}
-            )
-            expressive = name in {
-                "box-shadow",
-                "opacity",
-                "text-shadow",
+            if name in {
+                "filter",
                 "transform",
                 "writing-mode",
-            }
-            expressive = expressive or (
-                name in {"background", "background-image"}
-                and "gradient(" in value.lower()
-            )
-            if expressive:
-                self.expressive_css_used = True
-            if conditional:
+            } or "gradient(" in lowered:
                 self.add(
-                    "conditional-css-editor-test",
+                    "expressive-css-editor-test",
                     line,
-                    f"Conditional CSS {name} requires an exact editor test.",
+                    f"Expressive CSS {name} needs exact editor testing.",
                     warning=True,
                 )
 
@@ -421,9 +455,9 @@ def _article_html(path: Path) -> tuple[str, bool]:
 
 def audit_html(
     value: str,
-    contract: dict[str, Any],
     *,
     require_boundary: bool = True,
+    allow_media_placeholders: bool = False,
 ) -> list[dict[str, object]]:
     findings: list[dict[str, object]] = []
     if require_boundary:
@@ -453,61 +487,33 @@ def audit_html(
                     {
                         "code": "content-outside-boundary",
                         "line": 1,
-                        "message": "fragment.html may contain only markers and publishable content.",
+                        "message": "fragment.html may contain only publishable content.",
                         "warning_candidate": False,
                     }
                 )
-
-    parser = MarkupParser(
-        allow_media_placeholders=contract["delivery"]["target"] == "local-preview"
-    )
+    parser = MarkupParser(allow_media_placeholders=allow_media_placeholders)
     parser.feed(value)
     parser.close()
     findings.extend(parser.findings)
-    if parser.expressive_css_used and "svg" not in parser.tags:
-        if contract["effects"]["kind"] != "static-css":
-            findings.append(
-                {
-                    "code": "effect-contract-mismatch",
-                    "line": 1,
-                    "message": "Expressive CSS requires effects.kind=static-css.",
-                    "warning_candidate": False,
-                }
-            )
-    if "svg" in parser.tags:
-        if contract["effects"]["kind"] != "svg-smil":
-            findings.append(
-                {
-                    "code": "motion-contract-mismatch",
-                    "line": 1,
-                    "message": "SVG markup requires effects.kind=svg-smil.",
-                    "warning_candidate": False,
-                }
-            )
-
-    exceptions = exception_map(contract)
     resolved: list[dict[str, object]] = []
     for finding in findings:
-        warning_candidate = bool(finding.pop("warning_candidate"))
-        reason = exceptions.get(str(finding["code"])) if warning_candidate else None
-        finding["severity"] = "warning" if warning_candidate else "error"
-        finding["acknowledged"] = bool(reason)
-        if reason:
-            finding["exception_reason"] = reason
+        warning = bool(finding.pop("warning_candidate"))
+        finding["severity"] = "warning" if warning else "error"
         resolved.append(finding)
     return resolved
 
 
-def audit(path: Path, contract_path: Path) -> dict[str, object]:
-    contract = load_contract(contract_path)
-    validate_contract(contract, required_status="READY")
+def audit(path: Path, *, allow_media_placeholders: bool = False) -> dict[str, object]:
     value, require_boundary = _article_html(path)
-    findings = audit_html(value, contract, require_boundary=require_boundary)
+    findings = audit_html(
+        value,
+        require_boundary=require_boundary,
+        allow_media_placeholders=allow_media_placeholders,
+    )
     errors = [item for item in findings if item["severity"] == "error"]
     return {
         "ok": not errors,
         "article": path.name,
-        "contract": contract_path.name,
         "error_count": len(errors),
         "warning_count": len(findings) - len(errors),
         "findings": findings,
@@ -515,9 +521,11 @@ def audit(path: Path, contract_path: Path) -> dict[str, object]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Audit WeChat markup and inline CSS")
+    parser = argparse.ArgumentParser(
+        description="Audit WeChat safety and editor compatibility"
+    )
     parser.add_argument("article", type=Path, help="fragment HTML or article JSON")
-    parser.add_argument("--contract", type=Path, required=True)
+    parser.add_argument("--allow-media-placeholders", action="store_true")
     return parser
 
 
@@ -526,8 +534,11 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if not args.article.is_file():
             raise ValueError(f"article file does not exist: {args.article}")
-        result = audit(args.article, args.contract)
-    except (OSError, UnicodeError, json.JSONDecodeError, ContractError, ValueError) as exc:
+        result = audit(
+            args.article,
+            allow_media_placeholders=args.allow_media_placeholders,
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 1
     print(json.dumps(result, ensure_ascii=False, indent=2))

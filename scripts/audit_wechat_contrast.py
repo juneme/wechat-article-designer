@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate text contrast using thresholds from design-contract.json."""
+"""Detect objectively unreadable text contrast without policing the palette."""
 
 from __future__ import annotations
 
@@ -10,21 +10,6 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
-
-try:
-    from .design_contract import (
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
-except ImportError:
-    from design_contract import (  # type: ignore[no-redef]
-        ContractError,
-        exception_map,
-        load_contract,
-        validate_contract,
-    )
 
 START = "<!-- 微信公众号复制开始 -->"
 END = "<!-- 微信公众号复制结束 -->"
@@ -353,56 +338,14 @@ def _article_html(path: Path) -> tuple[str, int]:
 
 def audit_html(
     value: str,
-    contract: dict[str, Any],
     *,
     line_offset: int = 0,
 ) -> list[dict[str, object]]:
     parser = ContrastParser(line_offset=line_offset)
     parser.feed(value)
     parser.close()
-    thresholds = contract["color"]["contrast"]
-    body_minimum = float(thresholds["body_min_ratio"])
-    large_minimum = float(thresholds["large_min_ratio"])
-    acknowledged = exception_map(contract)
     findings: list[dict[str, object]] = []
     seen_manual: set[int] = set()
-
-    palette_values = [
-        contract["color"][name].get("value")
-        for name in ("field", "ink", "primary_signal", "secondary_signal", "correction")
-    ]
-    palette_values.extend(
-        item.get("value") for item in contract["color"].get("image_support", [])
-    )
-    allowed_rgb = {
-        tuple(round(channel) for channel in parsed[:3])
-        for value in palette_values
-        if isinstance(value, str) and (parsed := parse_color(value)) is not None
-    }
-    seen_unrecorded: set[tuple[int, str, str]] = set()
-    for declared in parser.declared_colors:
-        parsed = parse_color(str(declared["value"]))
-        if parsed is None or parsed[3] == 0:
-            continue
-        rgb = tuple(round(channel) for channel in parsed[:3])
-        if rgb in allowed_rgb:
-            continue
-        key = (int(declared["line"]), str(declared["property"]), color_label(parsed))
-        if key in seen_unrecorded:
-            continue
-        seen_unrecorded.add(key)
-        findings.append(
-            {
-                "code": "unrecorded-color",
-                "severity": "error",
-                "acknowledged": False,
-                "line": declared["line"],
-                "message": (
-                    f"{declared['property']} uses {color_label(parsed)}, which is absent "
-                    "from the design-contract palette."
-                ),
-            }
-        )
 
     for segment in parser.segments:
         line = int(segment["line"])
@@ -410,85 +353,42 @@ def audit_html(
             if line in seen_manual:
                 continue
             seen_manual.add(line)
-            reason = acknowledged.get("contrast-manual-review")
-            finding: dict[str, object] = {
+            findings.append(
+                {
                 "code": "contrast-manual-review",
                 "severity": "warning",
-                "acknowledged": bool(reason),
                 "line": line,
                 "message": "Text on an image, gradient, or unparseable color requires manual contrast confirmation.",
-            }
-            if reason:
-                finding["exception_reason"] = reason
-            findings.append(finding)
+                }
+            )
             continue
 
         foreground = segment["color"]
         background = segment["background"]
-        foreground_rgb = tuple(round(channel) for channel in foreground[:3])
-        if foreground_rgb not in allowed_rgb and not any(
-            key[0] == line and key[1] == "color" for key in seen_unrecorded
-        ):
-            findings.append(
-                {
-                    "code": "unrecorded-color",
-                    "severity": "error",
-                    "acknowledged": False,
-                    "line": line,
-                    "message": (
-                        f"Effective text color {color_label(foreground)} is absent "
-                        "from the design-contract palette."
-                    ),
-                }
-            )
-        if not segment["background_declared"]:
-            background_rgb = tuple(round(channel) for channel in background[:3])
-            if background_rgb not in allowed_rgb:
-                findings.append(
-                    {
-                        "code": "unrecorded-color",
-                        "severity": "error",
-                        "acknowledged": False,
-                        "line": line,
-                        "message": (
-                            f"Default canvas {color_label(background)} is absent from "
-                            "the design-contract palette; declare the article field."
-                        ),
-                    }
-                )
         ratio = contrast(foreground, background)
-        size = _px(segment["font_size"])
-        is_large = size is not None and (
-            size >= 24
-            or (size >= 18.66 and _weight(segment["font_weight"]) >= 700)
-        )
-        minimum = large_minimum if is_large else body_minimum
+        minimum = 3.0
         if ratio + 1e-6 < minimum:
             findings.append(
                 {
                     "code": "text-contrast",
                     "severity": "error",
-                    "acknowledged": False,
                     "line": line,
                     "message": (
                         f"{color_label(foreground)} on {color_label(background)} is "
-                        f"{ratio:.2f}:1; the contract requires {minimum:g}:1."
+                        f"{ratio:.2f}:1; the hard readability floor is {minimum:g}:1."
                     ),
                 }
             )
     return findings
 
 
-def audit(path: Path, contract_path: Path) -> dict[str, object]:
-    contract = load_contract(contract_path)
-    validate_contract(contract, required_status="READY")
+def audit(path: Path) -> dict[str, object]:
     value, line_offset = _article_html(path)
-    findings = audit_html(value, contract, line_offset=line_offset)
+    findings = audit_html(value, line_offset=line_offset)
     errors = [item for item in findings if item["severity"] == "error"]
     return {
         "ok": not errors,
         "article": path.name,
-        "contract": contract_path.name,
         "error_count": len(errors),
         "warning_count": len(findings) - len(errors),
         "findings": findings,
@@ -497,10 +397,9 @@ def audit(path: Path, contract_path: Path) -> dict[str, object]:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Validate text contrast against design-contract.json"
+        description="Detect objectively unreadable WeChat text contrast"
     )
     parser.add_argument("article", type=Path, help="HTML fragment or article JSON")
-    parser.add_argument("--contract", type=Path, required=True)
     return parser
 
 
@@ -509,8 +408,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if not args.article.is_file():
             raise ValueError(f"article file does not exist: {args.article}")
-        result = audit(args.article, args.contract)
-    except (OSError, UnicodeError, json.JSONDecodeError, ContractError, ValueError) as exc:
+        result = audit(args.article)
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 1
     print(json.dumps(result, ensure_ascii=False, indent=2))

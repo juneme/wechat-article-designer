@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify structural design-contract values against the final fragment."""
+"""Legacy v2/v3 design-contract diagnostic; not part of the v4 release path."""
 
 from __future__ import annotations
 
@@ -384,7 +384,9 @@ def audit(path: Path, contract_path: Path) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Verify the final fragment against its design contract")
+    parser = argparse.ArgumentParser(
+        description="Diagnose a preserved v2/v3 design contract (legacy, non-release)"
+    )
     parser.add_argument("article", type=Path)
     parser.add_argument("--contract", type=Path, required=True)
     args = parser.parse_args(argv)

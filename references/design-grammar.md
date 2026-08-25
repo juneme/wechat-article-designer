@@ -11,7 +11,7 @@ This is a growing system of design decisions, not a template gallery or a finite
 | Module manifest | Semantic blocks, order, width, weight, density curve | `references/modular-composition-system.md` |
 | Type plan | Display, section, body, label, caption, data hierarchy | `references/typography-system.md` |
 | Living grammar | Palette, composition, geometry, media, pacing, close | This file |
-| Design contract | Article-specific thesis and must/avoid/fallback rules | `references/article-design-synthesis.md` |
+| Visual thesis | Article-specific composition, motif, rhythm, and fallback thinking | `references/article-design-synthesis.md` |
 | Implementation | Copy-safe inline blocks | `references/snippets.md` |
 
 ## Visual field and color
@@ -99,7 +99,7 @@ Learn hierarchy, reveal order, depth, and sequence. Do not import scripts, hidde
 
 ## Synthesis rules
 
-1. Start from the content map, module manifest, and type plan.
+1. Start from the content map, narrative movement, and visual material in the article.
 2. Evaluate every grammar dimension against the reader, evidence, images, risk, and desired action.
 3. Choose one governing thesis and only the supporting decisions it needs.
 4. Resolve conflicts by comprehension, factual authority, mobile legibility, and editor compatibility.
@@ -107,7 +107,7 @@ Learn hierarchy, reveal order, depth, and sequence. Do not import scripts, hidde
 6. Give one module dominance and make density rise and fall.
 7. Use repeated containers only for records with the same semantic schema.
 8. Apply the recognizable-pattern test: if the page still reads as one reference or prior article with different copy, revise the opener, type plan, density curve, media rhythm, or close.
-9. Reject finite theme catalogs, theme selectors, and source-specific component mappings. The article-specific design contract is synthesized directly from the current content.
+9. Reject finite theme catalogs, theme selectors, and source-specific component mappings. Synthesize the composition directly from the current content.
 
 When style exploration is requested, present a few article-specific directions and compare their typography, composition, image behavior, and density. Never imply that the skill offers a fixed number of styles.
 

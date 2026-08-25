@@ -1,93 +1,80 @@
-# Mobile WeChat Typography System
+# Typography System
 
-Use this reference for every new full article and any redesign that changes hierarchy, density, or reading rhythm. Typography carries the design before decoration.
+Typography is a compositional language, not a fixed role table. Establish hierarchy through relationships among scale, weight, family, alignment, width, leading, color, and surrounding space. One article may use several heading treatments when their contrast expresses the narrative.
 
-## Derive type roles from the copy
+## Readability floor
 
-Sketch the roles before HTML, then let `plan` extract the selected implementation's actual values and variants:
+Ordinary mobile body prose normally begins around 15-16px with 1.75-2.0 leading. The release audit blocks only explicitly styled continuous body prose below 14px or below 1.5 leading. Compact labels, captions, data units, seals, and SVG coordinate text may be smaller when they remain legible and are not carrying paragraph-length information.
 
-| Role | Typical mobile range | Leading | Use |
-|---|---:|---:|---|
-| Display title | 30-38px | 1.20-1.35 | Literal article topic; reduce to 28-32px for long titles |
-| Section heading | 22-27px | 1.35-1.55 | A real change in argument or chapter |
-| Item heading | 17-20px | 1.45-1.65 | Comparable records, requirements, or subtopics |
-| Deck / lead | 15-17px | 1.75-1.95 | Scope, thesis, or one short orientation paragraph |
-| Body | 15-16px | 1.85-2.0 | Continuous Chinese reading |
-| Caption / note | 12-13px | 1.6-1.8 | Image context, source, qualifier, or disclaimer |
-| Label / index | 10-12px | 1.4-1.6 | Short navigation, chapter, or data label |
-| Code | 12-14px | 1.6-1.8 | Exact command, code, log, or technical identifier |
-| Data numeral | 28-52px | 1.0-1.2 | One verified number with an adjacent unit and explanation |
+These are starting points, not a required scale:
 
-These are recommendation ranges. A non-body role outside them produces a design warning and may be retained when the selected composition remains legible. Body remains a hard reading range of 15-16px with 1.85-2.0 leading. Preserve a clear relationship between adjacent roles and test the actual longest text.
+| Use | Common starting range | Notes |
+|---|---:|---|
+| Major display | 28-44px | Adjust to title length and desired line count |
+| Section turn | 20-28px | May change treatment between narrative acts |
+| Item heading | 16-20px | Keep the relation to adjacent explanation clear |
+| Body prose | 15-16px | Protect sustained reading comfort |
+| Caption or label | 11-14px | Keep factual qualifiers readable |
+| Data display | 26-56px | Keep unit and meaning adjacent |
 
-Every visible HTML role root uses `data-type-role` and explicit or inherited font stack, size, line height, weight, alignment, letter spacing, indentation, and one machine-parseable wrapping declaration. One semantic role may intentionally use several implementations, such as a quiet and a dominant section heading; `plan` records every observed signature under that role's `variants` while retaining one representative value for compatibility. This is a relationship contract, not a demand for typographic uniformity. SVG coordinate text uses native SVG typography and is outside the HTML role contract. The generated `design-contract.md` is for reading only. Omit a role only when the final HTML copy does not contain it.
+Use values outside these ranges when the composition needs them. Do not normalize expressive variation merely because a number differs from an example.
 
-## Role relationships
+## Body-only indentation
 
-- Use the system sans stack for dependable Chinese rendering. Express serif, condensed, or monospace influence through role, weight, scale, rules, and spacing when the real font cannot ship.
-- Usually keep the main reading voice, display contrast, and any purposeful data or label voice visibly related. Additional voices or variants are a composition judgment, not a schema failure.
-- Give only one phrase per viewport display-level weight. Section titles support it; they do not compete with it.
-- Use weight and spacing before adding a colored container. A section does not need a card to become a section.
-- Reserve monospace-like treatment for codes, dates, counts, coordinates, or technical labels. Do not set narrative Chinese body copy as pseudo-terminal text.
+The default prose convention is two Chinese characters:
 
-## Chinese composition
+```html
+<p data-indent-role="body-paragraph" style="margin:0 0 14px;color:#252525;font-size:16px;line-height:1.9;text-indent:2em;">
+  [continuous prose]
+</p>
+```
 
-- Keep body letter spacing at `0`. Non-body roles may use restrained tracking when it supports the selected composition; values outside the recommended `-0.5px` to `2.5px` range produce a warning for phone inspection.
-- Avoid tight tracking on continuous Chinese copy. Short display or Latin roles may use modest negative tracking when the longest final string remains legible.
-- Do not justify body copy by default; uneven mobile spacing is harder to read than a natural rag.
-- Avoid manually inserting spaces between Chinese characters.
-- Only ordinary continuous prose paragraphs use first-line indentation. Mark those `p` elements with both `data-type-role="body"` and `data-indent-role="body-paragraph"`, then apply the contract value, normally `text-indent:2em`.
-- `data-type-role="body"` controls font size and leading only. Without `data-indent-role="body-paragraph"`, it must use `text-indent:0`. Titles, leads, lists, quotes, dialogue, captions, labels, data rows, cards, actions, closings, and every container also use `0`.
-- A service, notice, promotional, interview, list-heavy, or short-paragraph article may have no indented prose paragraphs. A marked prose paragraph may use `text-indent:0`, which produces a design warning; record a `body-first-line-indent` exception when the deviation should be explicitly acknowledged.
-- Never simulate first-line indentation with full-width spaces, nonbreaking spaces, or repeated ordinary spaces. Keep the paragraph gap consistent with the recorded indentation convention.
-- Use deliberate `<br>` only in a short opener or closing after testing the final copy at 320px. Never preserve example line breaks after replacing the title.
-- Keep centered prose to about two short lines. Longer reading copy should align left.
-- Do not use an English eyebrow merely as decoration. A visible label must add category, date, ownership, or orientation.
-- Keep punctuation with its sentence. Do not place isolated punctuation in decorative spans.
+Only ordinary continuous prose uses that marker and indent. The following are not body-indent paragraphs even when implemented with `<p>`:
 
-## Line length and inset
+- title, deck, lead, eyebrow, chapter label, or section heading;
+- list item, comparison row, metric, date, or requirement;
+- quotation, poem, interview question, dialogue, or testimony;
+- image caption, source, footnote, disclaimer, or code;
+- card title, button-like action, contact line, closing blessing, or colophon;
+- any container.
 
-- Treat one line as a preferred mobile shape for `display` and `section` roles when it preserves the article's voice. The typography audit estimates rendered width against a conservative 288px budget and reports `heading-wrap-risk` as a review prompt, not an optimization target.
-- Resolve a risky heading by judging wording, semantic breaks, type scale, usable width, and the surrounding composition together. Do not compress a distinctive title into generic copy merely to clear the estimate. Keep the full official title in article metadata when the visible display phrase is intentionally shortened.
-- Never apply `white-space:nowrap` to text that does not demonstrably fit at 320px in the real editor. Preventing wrap by causing clipping or horizontal overflow is a failed layout.
-- A deliberately balanced two-line title is valid when it better preserves voice, meaning, or visual rhythm. Break at a semantic boundary and avoid a final line containing only one or two Chinese characters. An explicit `<br>` produces a review warning because it must be checked against the final copy.
-- Use one stable outer baseline, usually `8px`, and one reading inset, usually `18-22px`.
-- Standard body copy should not be squeezed into decorative narrow columns on mobile.
-- A quote, caption, or data note may use a narrower inset when that contrast is intentional.
-- Long Latin words, URLs, role names, and generated identifiers need `word-break:break-word;overflow-wrap:anywhere` on the containing line.
+Those elements use no first-line indent. Never set indentation on an ancestor and rely on descendants to cancel it. Never simulate indentation with full-width spaces, `&nbsp;`, or repeated ordinary spaces.
 
-## Vertical rhythm
+## Titles on mobile
 
-- Paragraph-to-paragraph: usually `8-14px`.
-- Heading-to-body: usually `10-16px`.
-- New section: usually `34-52px`, adjusted by density.
-- Caption after media: usually `8-12px`.
-- Dense fact rows: `14-18px` internal vertical padding with neutral dividers.
-- Follow a dense list with open prose, a media pause, or a larger section break. Do not repeat equal card gaps through the whole article.
-- Treat those values as a semantic scale, not a metronome. Distance should grow from same-thought grouping to continuation, turn, chapter, and closing pause. A repeated `data-spacing-role` may therefore have multiple values; `plan` records its sorted machine-readable scale instead of forcing one number everywhere.
-- Do not use a border, background, label, or card when spacing and type hierarchy already express the relationship.
+Prefer a one-line major title or section heading when the full wording and composition permit it. Estimate the real Chinese title at the intended type size, then inspect it at 320px. If an awkward wrap appears, first adjust scale, inset, emphasis distribution, or surrounding composition.
 
-## Emphasis budget
+Do not force `white-space:nowrap`, shrink the title into illegibility, or replace distinctive language with generic wording. A deliberate two-line title is valid when the break follows meaning, the two lines balance, and the final line is not an orphaned one- or two-character fragment.
 
-Choose one primary emphasis and at most two supporting signals:
+## Rhythm
 
-- primary: display scale, dark/light inversion, or dominant image;
-- supporting: accent rule, number, label, or one secondary field;
-- correction: a rare warning or editorial mark.
+Build spacing from semantic distance:
 
-Bold, color, border, background, shadow, and oversized type must not all emphasize the same sentence.
+- phrase-level details sit close;
+- one thought to its explanation uses a modest gap;
+- a turn in argument opens more air;
+- a chapter, visual scene, or emotional shift may use a large pause;
+- the closing should feel intentionally separate from the last evidence block.
 
-Review emphasis at viewport level: about two strong moments in one mobile screen is usually enough. This is a warning threshold rather than a required count; evidence-heavy passages may differ, but consecutive strong treatments still need a clear hierarchy.
+Do not force all paragraph gaps or all section gaps to one number. Repeated values create cadence; changes create emphasis and transition.
 
-## Typography review
+## Alignment and tracking
 
-Before delivery:
+Left alignment is the default for sustained reading, but centered, right-aligned, vertical, or mixed alignment can be meaningful in short display passages. Keep long prose easy to track.
 
-1. Read the article without color. The heading order and argument must remain clear.
-2. Check the longest title and section heading at 320px; prefer one line and inspect every `heading-wrap-risk` or `heading-forced-line-break` warning. Then check labels, contacts, and URLs.
-3. Run `audit_wechat_typography.py` with the READY JSON contract; body readability, unknown role implementations, and post-freeze variants absent from the contract block delivery, while non-body recommendation ranges remain warnings.
-4. Confirm only marked continuous-prose paragraphs use the recorded first-line indent; all other content and containers use `0`, with no manual-space indentation.
-5. Confirm labels are meaningful, body tracking is zero, and any display tracking remains legible.
-6. Confirm no body paragraph is centered, boxed, or tinted solely for decoration.
-7. Confirm repeated items use the same type schema and unlike roles do not.
-8. Confirm the closing is quieter than the opener unless the final action is the article's purpose.
+Chinese body copy normally uses `letter-spacing:0`. Display tracking may open or compress when the result remains legible. Do not insert spaces between Chinese characters to fake tracking because line wrapping becomes unpredictable.
+
+## Emphasis
+
+Use contrast deliberately. Scale, weight, color, background, border, shadow, alignment, and isolation can all emphasize; they do not all need to fire at once. Let one device lead and the others support unless a deliberate visual climax warrants excess.
+
+Review the full viewport rather than counting bold elements. A dense evidence section and a lyrical transition legitimately need different typographic energy.
+
+## Review
+
+1. Read the article without color and confirm that structure remains clear.
+2. Inspect real titles, the longest label, URLs, dates, and mixed Chinese/Latin lines at 320px.
+3. Confirm only marked body prose uses `2em` indentation.
+4. Confirm paragraph copy remains readable without zoom.
+5. Keep SVG text concise enough to survive font substitution and fixed coordinates.
+6. Run `audit_wechat_typography.py`; recommendations appear as warnings, while only the readability and indentation boundary blocks.

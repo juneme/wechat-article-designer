@@ -32,7 +32,7 @@
     <circle cx="588" cy="292" r="17" fill="#FF6846"/>
     <rect x="628" y="278" width="84" height="28" fill="#FFFFFF"/>
     <path d="M468 333H712" stroke="#79BB94" stroke-width="2"/>
-    <text x="468" y="358" fill="#27734B" font-family="Arial, sans-serif" font-size="15" font-weight="700">SYNTHESIZE · TYPE · VALIDATE</text>
+    <text x="468" y="358" fill="#27734B" font-family="Arial, sans-serif" font-size="15" font-weight="700">WRITE · COMPOSE · POSTFLIGHT</text>
   </g>
 
   <path d="M752 252H788" stroke="#171712" stroke-width="3"/>

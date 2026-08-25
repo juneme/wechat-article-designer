@@ -1,173 +1,163 @@
 ---
 name: wechat-article-designer
-description: Create, revise, validate, and deliver mobile-first WeChat Official Account (微信公众号) articles through a stage-gated design contract covering editorial structure, explicit Chinese typography, palette, media, effects and fallbacks, editor compatibility, versioning, and configured draft-box delivery.
+description: Write, art-direct, compose, validate, version, and deliver original mobile-first WeChat Official Account (微信公众号) articles without template or design-contract gates, including expressive inline layouts, Chinese typography, images, SVG/SMIL scenes, editor compatibility, local preview, and configured draft-box delivery.
 ---
 
 # WeChat Article Designer
 
-Create audience-facing WeChat article fragments from the article's content and the living design grammar. Do not choose or reuse a fixed page template.
+Write and design one audience-facing WeChat article as an original composition. Let the subject, evidence, voice, images, and reading rhythm determine the visual language. Do not select a theme, reuse a fixed page template, or compose toward a machine design score.
 
-## Operating contract
+## Operating boundary
 
-1. Create or reuse one article workspace before preparing images or draft data.
-2. Resolve the delivery route before production: use the console server when its full configuration is present and healthy; otherwise use a local preview. Do not add clipboard-copy controls to previews.
-3. Keep source instructions, design reasoning, validation notes, and local paths outside publishable copy.
-4. Preserve supplied facts, names, assets, claims, and brand rules. Do not invent evidence.
-5. Produce a fragment with inline styles, not a web page.
-6. Treat the real WeChat editor and phone preview as the rendering authority.
-7. Draft creation is staging; it does not authorize publication or mass sending.
-8. For a new article or substantial redesign, complete every stage gate and every design-contract dimension below. A conditional feature may be recorded as `none` or `N/A` with a content-based reason; it may not be silently omitted.
-9. Explore and implement candidate directions before freezing the private design contract. The `plan` command extracts machine-observable values, observed type variants, and spacing scales from the selected HTML so the contract describes the chosen implementation without flattening it.
-10. For a correction or minor revision, preserve the existing contract and rerun the gates affected by changed body, metadata, contract, assets, or preview state. Do not force a full redesign workflow unless the visual or editorial system changes materially.
+1. Own both writing and design unless the user explicitly supplies locked copy.
+2. Infer missing subjective choices and finish a coherent result before asking for preferences. Never invent names, dates, credentials, institutional claims, evidence, or other factual details.
+3. Create or reuse one article workspace. Keep source instructions, local paths, design reasoning, audit output, experiments, and conversation text outside publishable copy.
+4. Resolve delivery before production. When all three console variables exist and `status` confirms both keys plus a healthy server, prepare a direct draft route. Otherwise prepare local preview. A user request for preview-only, HTML-only, or stop-before-draft overrides the backend.
+5. Produce an HTML fragment with inline styles. The real WeChat editor and phone preview remain the rendering authority.
+6. Draft creation is authorized staging when the backend is healthy. It never authorizes publication or mass sending.
+7. New articles and substantial redesigns use the complete creative workflow below. Minor corrections preserve the established editorial and visual system.
 
-## Route the request
+There is no Creative/Steady split and no mandatory design contract. `design-contract.json`, `data-type-role`, `data-module-id`, `data-density`, `data-spacing-role`, `data-geometry-role`, palette roles, effect quotas, fixed type roles, and a `PLANNED`/`READY` state are not release requirements. Legacy workspaces may retain those files as private history.
 
-| Request | Read |
+## Read only what the task needs
+
+| Task | Reference |
 |---|---|
-| New article or substantial redesign | `references/editorial-writing-grammar.md`, `references/article-design-synthesis.md`, `references/modular-composition-system.md`, `references/typography-system.md`, `references/design-grammar.md`, and `references/css-capabilities.md` |
-| CSS capability or fallback decision | `references/css-capabilities.md` |
-| Reusable inline block | `references/snippets.md` |
-| Article creation, synchronization, or version history | `references/article-workspaces.md` |
-| SVG component or interactive editorial layout | `references/svg-design-genes.md` |
-| Learn a design source | `references/design-learning-workflow.md` |
-| Direct draft-box delivery | `references/direct-publishing.md` |
+| New article or substantial redesign | `references/editorial-writing-grammar.md`, `references/article-design-synthesis.md`, `references/modular-composition-system.md`, `references/typography-system.md`, `references/design-grammar.md` |
+| Inline CSS choice or fallback | `references/css-capabilities.md` |
+| Reusable primitive | `references/snippets.md` |
+| Workspace, revision, or migration | `references/article-workspaces.md` |
+| SVG scene or motion | `references/svg-design-genes.md` |
+| Learn from a visual source | `references/design-learning-workflow.md` |
+| Draft-box delivery | `references/direct-publishing.md` |
 
-For an explicit visual reference, reproduce it as closely as the article content and WeChat boundaries allow while preserving its visual thesis and signature relationships. Adapt only what the final evidence, copy, mobile width, or editor compatibility requires.
+For an explicit visual reference, preserve its visual thesis, hierarchy, rhythm, spatial relationships, and signature moves as closely as the content and WeChat surface allow. Rebuild it for the final evidence and copy; do not flatten it into the house examples.
 
-## Non-negotiable production boundary
+## Complete creative workflow
 
-Apply this boundary to every new full article and substantial redesign. It is a staged workflow, not a menu of optional skill features.
+### 1. Resolve route and workspace
 
-1. **Route and workspace gate**: check the three console variables without printing their values, run `status` when all are present, choose direct draft or local preview, then create one article workspace. A user request for preview-only, HTML-only, or stop-before-draft overrides an available backend.
-2. **Editorial gate**: complete the content map and editorial promise, then make the unstyled article pass `references/editorial-writing-grammar.md`. Do not style unresolved copy.
-3. **Exploration and implementation gate**: derive two or three lightweight visual directions when useful, choose the strongest one, and implement that candidate in `fragment.html`. Do not ask the user to approve intermediate directions. Keep facts and media authority explicit in `design-contract.json`; visual intent may remain `EXPLORING` while the candidate develops.
-4. **Freeze gate**: run the workspace `plan` command after selecting the implementation. It extracts structure, dimensions, spacing scales, typography variants, palette membership, media relationships, geometry observations, and effects from the exact HTML, sets `PLANNED`, validates the remaining editorial and delivery decisions, and regenerates the private `design-contract.md`. Warnings guide refinement but do not block. Only the release command may bind the exact fragment and promote it to `READY`.
-5. **Release gate**: use only `python scripts/release_article.py deliver <workspace>`. It binds the exact fragment to the contract, audits the local fragment and all publishable metadata before any upload, resolves the backend route, uploads prepared local media, re-audits the hosted result, creates one new draft when healthy, and otherwise produces the permitted local preview. Any expressive behavior requires a readable static state; the user judges the final draft.
+Check `WECHAT_CONSOLE_URL`, `WECHAT_IMAGE_API_KEY`, and `WECHAT_PUBLISH_API_KEY` without printing their values. If all exist, run:
 
-The design contract must answer all of these dimensions:
+```powershell
+python scripts/wechat_console_api.py status
+```
 
-| Dimension | Required decision |
-|---|---|
-| Exploration | Candidate directions considered, selected direction, signature move, compatibility risk, and selection reason |
-| Editorial and structure | Reader, purpose, evidence boundary, reasoning path, module sequence, dominant module, and closing job |
-| Layout and rhythm | Reading order, outer baseline, content inset, widths, section spacing, paragraph spacing, density curve, and alignment behavior |
-| Typography | Actual font stack, size, line height, weight, alignment, first-line indent, letter spacing, wrapping, and role relationships for every used HTML text role; one role may contain multiple intentional variants |
-| Color | Exact field, ink, primary signal, secondary signal, correction, and image-derived colors; usage ratio and contrast strategy |
-| Media | The job, authority, order, crop, caption, and final/placeholder state of each image or illustration |
-| Geometry and motif | Edge language, rules, surfaces, radius policy, content-native motif, and where each may recur |
-| Effects and motion | Choose `none`, static expressive CSS, or SVG/SMIL; record its semantic job, compatibility risk, static state, fallback, and test obligation |
-| Delivery | Must-keep and avoid rules, editor fallback, target route, and stop condition |
+Use direct draft only when the command succeeds, both key flags are true, and `server_healthy` is true. Create the workspace with `--no-preview` for that route; otherwise create it with preview enabled. A failed or missing backend immediately selects local preview.
 
-Mandatory decision does not mean mandatory decoration. In particular, never add animation, SVG, cards, gradients, shadows, or images merely to satisfy the matrix. Only continuous prose paragraphs marked `data-indent-role="body-paragraph"` use the default `text-indent:2em`. Containers and all unmarked content use `text-indent:0`, including titles, leads, lists, quotations, dialogue, captions, cards, actions, and closings. A different prose convention produces a warning and may record a `body-first-line-indent` acknowledgment.
+```powershell
+python scripts/article_workspace.py create --title "Article title" --date YYYY-MM-DD
+```
 
-## Design a new article
+### 2. Establish the editorial core
 
-### 1. Establish the brief
+Privately identify the reader situation, literal topic, narrator, central friction, defensible judgment, evidence boundary, reader gain, desired action, information density, emotional register, image roles, and brand constraints. Write the complete article before polishing visual fragments. Make it understandable without the request or conversation that produced it.
 
-Identify the reader, narrator, literal topic, desired action, information density, emotional register, image roles, evidence, brand constraints, and risk profile. The Skill owns both writing and design. Infer subjective and non-factual decisions, finish a coherent result, and let the user judge the output; never invent names, dates, evidence, claims, credentials, or institutional facts.
+Use headings, lists, comparisons, quotations, data, and emphasis only when those relationships exist in the content. Remove agent offers, approval requests, validation narration, file instructions, source-request echoes, and other workflow language.
 
-### 2. Write and structure before styling
+### 3. Discover the article's visual idea
 
-Create a private:
+Read the content for visual material: scale, tension, repetition, sequence, texture, season, place, movement, contrast, objects, evidence, and emotional turns. When comparison helps, sketch two or three lightweight directions privately and choose the strongest. Do not ask the user to approve intermediate directions.
 
-- editorial promise for reader situation, central friction, defensible judgment, reader gain, and evidence boundary;
-- content map for facts, argument, images, and reader action;
-- module manifest for semantic roles, order, width, weight, and density;
-- type plan for display, section, item, body, label, caption, and data roles.
+Define a visual thesis and one or more content-native motifs, then compose. This is creative guidance, not a form to complete. A strong article may be quiet or exuberant; it may use open prose, editorial typography, posters, panels, borders, gradients, shadows, irregular rhythm, multiple SVG scenes, image-led pacing, or none of them. Use what the article needs. There is no component quota and no requirement to justify decorative decisions to a validator.
 
-Make the complete unstyled article pass the editorial review. Then evaluate the living grammar, sketch two or three lightweight directions when that comparison is useful, select the strongest direction, and implement it. Before `plan`, complete the factual, editorial, media-authority, delivery, and exploration records that cannot be inferred from markup. The command extracts the selected implementation's concrete design values into JSON and regenerates `design-contract.md`.
+### 4. Build the publishable fragment
 
-Do not show a template picker or start from a previous article. Exploration is private working material: derive directions from the current content, select one yourself, and let the user judge the completed draft.
+- Wrap the exact publishable markup with `<!-- 微信公众号复制开始 -->` and `<!-- 微信公众号复制结束 -->`.
+- Use inline styles and mobile-first flow. Do not add a document wrapper, style block, script, web font, or external stylesheet.
+- Treat the 320px content column as a hard rendered-width ceiling. SVG `viewBox` coordinates are not CSS pixels; responsive SVG may use `width:100%`.
+- Make continuous prose comfortable to read. The default is `font-size:15-16px`, generous leading, and `text-indent:2em` on each ordinary body paragraph.
+- Mark an indented prose paragraph as `p[data-indent-role="body-paragraph"]`. This marker exists only to keep indentation on body prose. Titles, leads, labels, lists, quotations, dialogue, captions, cards, actions, closings, and containers use no first-line indent.
+- Never simulate indentation with full-width spaces or repeated non-breaking spaces.
+- Keep major titles and section headings on one mobile line when the wording and visual voice permit it. Reduce display size or refine composition before wrapping. Do not replace distinctive language with generic copy, force `white-space:nowrap`, or create overflow. A deliberately balanced two-line heading remains valid.
+- `data-media-id` is required only for a local body image that the release command must upload and replace. Other design markers are optional and have no release meaning.
+- Use local primitives as raw material, not a checklist. Do not stack examples merely because they exist.
 
-### 3. Write for the reader
+### 5. Use images and motion freely within the publishing boundary
 
-- Read `references/editorial-writing-grammar.md` and make the unstyled draft pass its review before composing HTML.
-- Make the article understandable without the source request.
-- Remove workflow narration, approval language, validation status, and source-request echoes.
-- Keep claims within supplied evidence and audience boundaries.
-- Use headings, lists, numbers, comparisons, and emphasis only for relationships that exist in the source content.
-- Run `scripts/audit_audience_boundary.py` before delivery.
+When a required body image or cover is missing, use an available image-generation capability first without turning generated imagery into evidence. Save prepared files under `assets/` and register only operational media data in `release-manifest.json`.
 
-### 4. Build the fragment
+Inline SVG and SMIL are available whenever they improve explanation, comparison, pacing, atmosphere, emotional transition, seasonal change, or narrative world-building. Multiple scenes are valid when each has a real compositional job. Gradients, masks, clipping, paths, filters, `textPath`, morphing, and ambient motion may be explored when the exact result has a meaningful initial state and survives editor testing. Essential facts and actions must remain available in initial state or adjacent HTML.
 
-- Wrap publishable markup with `<!-- 微信公众号复制开始 -->` and `<!-- 微信公众号复制结束 -->`; these legacy-named comments are extraction markers, not a clipboard feature.
-- Prefer single-column `section`, `p`, and `span` flow.
-- Keep all required styles inline.
-- Use the article's images and subject to determine palette, motif, media rhythm, and transitions.
-- Set body letter spacing to `0`; use non-body tracking only when the selected composition remains legible. Make hierarchy readable without depending on color, cards, gradients, or shadows.
-- Prefer a one-line display or section heading when it occurs naturally. Do not shorten a distinctive title into generic copy merely to satisfy the estimate. A deliberately balanced two-line heading is valid when it preserves voice, meaning, and composition; inspect it at 320px. Never use `white-space:nowrap` to hide overflow.
-- Put a supported `data-type-role` on each HTML text-role root and `data-content-kind="dialogue"` or `"quotation"` on genuine quoted speech. Multiple implementations of one role are valid when they form an intentional hierarchy; `plan` records each observed variant. SVG coordinate text uses concise native SVG typography and does not need an HTML `data-type-role`. Mark only ordinary continuous prose `p` elements with `data-indent-role="body-paragraph"`; `data-type-role="body"` by itself is a size/leading role and does not authorize indentation. Every module uses `data-module-id` and `data-density`. Mark exactly one horizontal-padding implementation each for `data-layout-role="outer-baseline"` and `"content-inset"`; mark semantic spacing examples and important recurring geometry with `data-spacing-role` and `data-geometry-role`. Spacing markers may carry different pixel values when the density curve requires them. Body media uses authored contract metadata plus matching `data-media-id` and `data-media-crop`; a visible caption follows it with `data-caption-for`. Use explicit or inherited machine-readable type values and never insert manual spaces to simulate indentation. `plan` extracts these implementation values into the contract.
-- Adapt only the needed blocks from `references/snippets.md`; do not stack every available component.
-- After a selected design changes, rerun `plan` so the contract is re-extracted before release.
+CSS keyframe animation is not publishable because a fragment cannot carry its required style block. Use inline SVG/SMIL for motion. Treat compatibility warnings as reasons to inspect the actual draft, not reasons to make every article visually conservative.
 
-## Article workspace
+### 6. Run postflight release
 
-Read `references/article-workspaces.md` and create one workspace per article with `scripts/article_workspace.py`. Use `create --no-preview` for a ready direct-draft route and the default create command for the local-preview route. Keep `fragment.html` as the editable markup source, local images under `assets/`, and server draft data in `article.json`.
+Do not freeze a design plan before composing. The optional command below records observations after the design exists and never blocks release:
 
-Develop the selected HTML while the contract is `EXPLORING`, then run `plan` to extract implementation values and freeze it as `PLANNED`. Do not set `READY` or `checks.fragment_sha256` manually: the enforced release command binds and promotes the exact audited fragment. Sync rejects a changed frozen plan or stale fragment binding, regenerates the private Markdown view, creates the script-free preview only for the local-preview route, physically removes an obsolete preview on the direct route, rotates `request_id` only when draft payload changed, and snapshots every body, metadata, contract, asset, or preview change under `revisions/`. Do not edit generated contract Markdown or copy one article's root-level files over another article.
+```powershell
+python scripts/article_workspace.py inspect ".\articles\date_title"
+```
 
-## Images
+Deliver only through:
 
-When a required image is missing, generate it first with an available image capability while respecting the evidence boundary. If generation or final hosting cannot be completed, switch the article to local preview and use the editable image placeholder in `references/snippets.md`. Keep filenames and insertion instructions outside the publishable boundary, then remove placeholders before direct delivery.
+```powershell
+python scripts/release_article.py deliver ".\articles\date_title"
+```
 
-If the release command returns exit code `3` with `image-generation-required`, retain its `attempt_id`, immediately invoke the available image capability without asking the user, store the result under workspace `assets/`, update its contract media state and `source_path`, rerun `plan` only if a design decision changed, and run release again. Do not hand off at exit code `3`. Only after the image capability actually fails may release be rerun with both `--image-generation-attempt-id <id>` and `--image-generation-failed "reason"`; an invented or stale ID is rejected.
+The release command audits the finished article, selects the resolved route, uploads prepared media, synchronizes revisions, and either creates one new draft or produces local preview. It does not compare the design with a contract.
 
-For direct delivery:
+## Operational media manifest
 
-1. Finalize body images and a required 2.35:1 PNG, JPEG, GIF, or WebP cover whose local source remains under `assets/` so pixel dimensions can be machine checked, including after upload or `thumb_media_id` reuse.
-2. Upload body images in article mode and insert returned HTTPS article URLs.
-3. Upload the cover separately and use its permanent `media_id`.
-4. Remove placeholders and local paths before draft validation.
+`release-manifest.json` contains delivery data only. It is not a visual brief:
 
-Generated images may illustrate a story but may not prove certifications, official documents, seals, logos, real events, or institutional status.
+```json
+{
+  "schema_version": 1,
+  "article_title": "Article title",
+  "media": [
+    {
+      "name": "cover",
+      "placement": "cover",
+      "required": true,
+      "state": "generated-local",
+      "source_path": "cover.jpg",
+      "remote_ref": ""
+    }
+  ],
+  "delivery": {
+    "target": "auto",
+    "backend_ready": false,
+    "user_requested_preview_only": false,
+    "fallback_reason": "",
+    "image_generation_status": "complete",
+    "image_generation_reason": ""
+  }
+}
+```
 
-Prefer vertical media flow for repeated images. Use manual horizontal swipe only when the exact final block can be tested in WeChat and a single-column fallback is available.
+States are `placeholder`, `generated-local`, `supplied-local`, or `hosted`. A body item uses a matching `<img data-media-id="name" src="wechat-media://name" ...>` until upload. A direct draft requires one prepared 2.35:1 cover. Keep the local cover source even after upload so dimensions remain verifiable.
 
-## Compatibility
+## Hard release gates
 
-Every final fragment must satisfy these invariants:
+Postflight validation blocks delivery only for defects that make the article unsafe, operationally ambiguous, or materially unreadable:
 
-- no scripts, event handlers, external CSS, `style` blocks, web fonts, iframes, objects, or embeds;
-- no local or relative image paths;
-- no CSS Grid, positioned layout, fragile tables, or interaction-dependent information;
-- no percentage width above `100%`;
-- fixed widths stay inside the mobile column;
-- opening and closing `section`, `p`, and `span` counts balance;
-- all information remains readable after optional visual effects are removed.
+- unsupported factual invention or leakage of source instructions, workflow narration, private paths, conversation history, cache, experiments, or local test data;
+- scripts, event handlers, external CSS/fonts, dangerous URLs, active embeds, CSS Grid, or positioned layouts that cannot survive WeChat;
+- rendered fixed widths above 320px or percentages above 100%;
+- body prose below 14px or below 1.5 leading when those values are explicitly set;
+- non-body indentation, marked body indentation other than `2em`, or manual-space indentation;
+- known text contrast below the hard 3:1 readability floor;
+- unhosted images in a direct draft, missing operational media mappings, or an invalid cover;
+- backend routing, draft validation, revision transaction, idempotence, or ambiguous-submission failures.
 
-There is one capability model. Inline flow, expressive CSS, and SVG/SMIL are available under the same contract when they materially support the article. Judge each declaration by its semantic value, readable fallback, and WeChat behavior; do not reduce the whole article to a capability label.
+Unknown CSS, expressive effects, gradients, image-backed text, SVG motion, compact labels, unusual spacing, and other aesthetic decisions produce warnings or require human inspection. They do not fail merely for differing from recommendations.
 
-Every new design must make an effects decision. `none` is appropriate when motion or expressive CSS adds no editorial value. CSS keyframe animation is not publishable because the fragment cannot contain a `style` block; use the established SVG/SMIL vocabulary when motion materially supports explanation, atmosphere, pacing, emotional transition, seasonal change, or narrative world-building.
+## Delivery behavior
 
-SVG editorial components are an established capability. When one or more SVG scenes materially improve explanation, comparison, sequence, reveal, atmosphere, pacing, emotional transition, or emphasis, read `references/svg-design-genes.md` and compose them from the article's Visual DNA. Multiple scenes are valid when each performs a distinct narrative job and the density curve leaves enough quiet space. Essential facts and actions must remain understandable from the initial state or surrounding prose, but a duplicate fallback block is not required. SVG uses the normal article checks and draft validation, not a separate validation workflow.
+If required media is missing, release returns exit code `3`, `image-generation-required`, blockers, and an `attempt_id`. Immediately generate the media, update `release-manifest.json`, and rerun without asking for confirmation. Only after a real generation failure may the same attempt ID be submitted with `--image-generation-failed`; release then creates local preview.
 
-## Direct draft workflow
+If image upload, server validation, or a definite pre-draft request fails, switch immediately to local preview. Already uploaded WeChat materials remain under the user's control. When draft creation has started and returns timeout, `502`, pending, unknown, or any ambiguous result, do not retry and do not fall back. The workspace remains locked until the user checks the real draft box and runs:
 
-Read `references/direct-publishing.md` before using the console client.
+```powershell
+python scripts/article_workspace.py resolve-draft WORKSPACE --outcome created
+python scripts/article_workspace.py resolve-draft WORKSPACE --outcome not-created
+```
 
-1. Confirm `WECHAT_CONSOLE_URL`, `WECHAT_IMAGE_API_KEY`, and `WECHAT_PUBLISH_API_KEY` without printing values.
-2. When all three are present, run `python scripts/wechat_console_api.py status`. Treat the backend as ready only when the command succeeds, both key flags are true, and `server_healthy` is true.
-3. Generate required missing images through an available image capability. Record generated or supplied local assets in the contract; record a real failure before permitting placeholder fallback.
-4. Run `python scripts/release_article.py deliver <workspace>`. This is the only authorized mutating entrypoint; the low-level client exposes only status and validation diagnostics. The release command audits local markup and metadata before uploading, synchronizes the selected route, validates the hosted payload, and creates one new draft automatically when ready.
-5. Use `--preview-only` only when the user requested it. Use image-failure flags only with the current `attempt_id` after an actual generation attempt failed.
+A healthy backend route must not leave `preview.html` behind. A local-preview route must generate it. Revisions increment when body, metadata, operational media, assets, preview state, optional design report, or preserved legacy design files change. `request_id` rotates only when the draft payload changes. Snapshot failure rolls the synchronization back.
 
-If any variable is missing, status is unhealthy, image generation or upload fails, route-specific server validation fails, or the backend returns a definite pre-draft error, do not attempt partial direct delivery; let the release command synchronize the local-preview route and report it. Local article-audit errors block both routes. Already uploaded WeChat material remains under the user's control. If draft creation has started and returns a timeout, `502`, `pending`, `unknown`, or another ambiguous result, do not retry and do not switch routes; report the ambiguity so the user can inspect the real draft box.
+For a v2/v3 workspace, run `python scripts/article_workspace.py migrate WORKSPACE`. Migration creates `release-manifest.json` from legacy media records and preserves the old design files without making them release gates. The legacy `plan` command is a non-blocking alias for `inspect`.
 
-Never automatically retry `create-draft` after a timeout, `502`, pending, or unknown result. Inspect operation state and the real draft box first.
+## Final review
 
-The release command records `submitting` before the request leaves the machine. A process interruption or ambiguous response locks the whole workspace against retry and preview fallback. After the user inspects the real draft box, run `python scripts/article_workspace.py resolve-draft <workspace> --outcome created` or `--outcome not-created`; do not edit the lock in `manifest.json`.
-
-## Quality gates
-
-Before delivery:
-
-1. Let `release_article.py` run the markup, audience, width, typography, contrast, and structural contract audits. Do not call the mutating API client directly.
-2. Confirm the release command produced a `READY`, machine-valid contract whose generated fragment digest, module order, spacing roles, geometry markers, and media order match the final fragment; inspect the regenerated private Markdown view.
-3. Review facts, promises, institutional terms, incentives, brands, and evidence images.
-4. Check approximately 320px, 375px, and 390px widths for overflow, long text, image loading, and reading order.
-5. Review the longest title and section heading at 320px. Treat `heading-wrap-risk` as a composition prompt, not a shortening target: prefer one line when natural, and retain a deliberate balanced two-line heading when it better preserves voice, meaning, or visual rhythm. Also review labels, URLs, body size, leading, Chinese tracking, captions, and density changes.
-6. Preview manual swipe, expressive CSS, SVG/SMIL, or any fragile pattern in the real editor when available.
-7. For SVG, confirm the initial state and surrounding prose preserve essential meaning without requiring interaction.
-8. For direct delivery, require hosted body images, a permanent cover `media_id`, and successful draft validation.
-
-For a backend-unavailable, failed pre-draft, or explicitly preview-only route, report the article workspace, local preview, and validation state. For direct delivery, report the confirmed new-draft API result, leave final review to the user, and do not create or present a local preview as the delivery artifact. Keep design synthesis and validation history out of the published article.
+Before handing off, review the actual reader-facing article and all draft metadata. Check facts, promises, brands, incentives, institutional language, evidence images, title, author, digest, opening, transitions, closing, and action. Inspect approximately 320px, 375px, and 390px viewports, then inspect the actual WeChat draft on a phone when available. The user decides whether the final draft should be published.

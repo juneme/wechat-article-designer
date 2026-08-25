@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the mandatory WeChat article release gates through one command."""
+"""Audit and deliver a free-composition WeChat article through one command."""
 
 from __future__ import annotations
 
@@ -21,23 +21,9 @@ from typing import Any
 
 try:
     from . import article_workspace, wechat_console_api
-    from .design_contract import (
-        ContractError,
-        contract_warnings,
-        fragment_sha256,
-        load_contract,
-        validate_contract,
-    )
 except ImportError:
     import article_workspace  # type: ignore[no-redef]
     import wechat_console_api  # type: ignore[no-redef]
-    from design_contract import (  # type: ignore[no-redef]
-        ContractError,
-        contract_warnings,
-        fragment_sha256,
-        load_contract,
-        validate_contract,
-    )
 
 AUDITS = (
     "audit_wechat_markup.py",
@@ -45,7 +31,6 @@ AUDITS = (
     "audit_wechat_widths.py",
     "audit_wechat_typography.py",
     "audit_wechat_contrast.py",
-    "audit_design_contract.py",
 )
 REQUIRED_ENV = (
     "WECHAT_CONSOLE_URL",
@@ -209,21 +194,21 @@ def _replace_body_media(fragment_file: str, media_id: str, source: str) -> str:
 
 def _upload_local_media(
     article_dir: Path,
-    contract: dict[str, Any],
+    release_manifest: dict[str, Any],
     article: dict[str, Any],
     fragment_file: str,
 ) -> tuple[dict[str, Any], dict[str, Any], str]:
-    candidate_contract = copy.deepcopy(contract)
+    candidate_release = copy.deepcopy(release_manifest)
     candidate_article = dict(article)
     candidate_fragment = fragment_file
     local_assets = [
         item
-        for item in sorted(candidate_contract["media"]["assets"], key=lambda item: item["order"])
+        for item in candidate_release["media"]
         if item["state"] in {"generated-local", "supplied-local"}
     ]
     if any(item["state"] == "generated-local" for item in local_assets):
-        candidate_contract["delivery"]["image_generation_status"] = "complete"
-        candidate_contract["delivery"]["image_generation_reason"] = (
+        candidate_release["delivery"]["image_generation_status"] = "complete"
+        candidate_release["delivery"]["image_generation_reason"] = (
             "Required generated assets exist in the workspace."
         )
     for item in local_assets:
@@ -255,14 +240,14 @@ def _upload_local_media(
             )
             item["remote_ref"] = article_url
         item["state"] = "hosted"
-    return candidate_contract, candidate_article, candidate_fragment
+    return candidate_release, candidate_article, candidate_fragment
 
 
 def _use_local_media_placeholders(
-    contract: dict[str, Any], fragment_file: str
+    release_manifest: dict[str, Any], fragment_file: str
 ) -> str:
     result = fragment_file
-    for item in contract["media"]["assets"]:
+    for item in release_manifest["media"]:
         if item["placement"] == "body" and item["state"] != "hosted":
             marker = re.compile(
                 r"<([a-z][a-z0-9]*)\b[^>]*\bdata-media-id\s*=\s*(['\"])"
@@ -284,16 +269,16 @@ def _use_local_media_placeholders(
 
 def _image_blockers(
     article_dir: Path,
-    contract: dict[str, Any],
+    release_manifest: dict[str, Any],
     article: dict[str, Any],
     direct: bool,
 ) -> list[str]:
     blockers = [
         f"required media {item['name']!r} is still a placeholder"
-        for item in contract["media"]["assets"]
+        for item in release_manifest["media"]
         if item.get("required") is True and item.get("state") == "placeholder"
     ]
-    for item in contract["media"]["assets"]:
+    for item in release_manifest["media"]:
         is_direct_cover = direct and item.get("placement") == "cover"
         state = item.get("state")
         requires_local_source = (
@@ -319,7 +304,9 @@ def _image_blockers(
                         "direct draft requires a 2.35:1 cover"
                     )
     if direct:
-        covers = [item for item in contract["media"]["assets"] if item["placement"] == "cover"]
+        covers = [
+            item for item in release_manifest["media"] if item["placement"] == "cover"
+        ]
         if not covers:
             blockers.append("direct draft requires a generated or supplied 2.35:1 cover")
         for item in covers:
@@ -334,9 +321,9 @@ def _image_blockers(
     return blockers
 
 
-def _finalize_contract(
-    contract: dict[str, Any],
-    fragment_file: str,
+def _finalize_release_manifest(
+    release_manifest: dict[str, Any],
+    article_title: str,
     *,
     backend_ready: bool,
     target: str,
@@ -344,10 +331,7 @@ def _finalize_contract(
     generation_failure: str | None,
     fallback_reason: str | None,
 ) -> dict[str, Any]:
-    candidate = copy.deepcopy(contract)
-    if candidate.get("status") not in {"PLANNED", "READY"}:
-        raise ReleaseError("design contract must pass the PLANNED gate before release")
-    fragment = article_workspace._extract_fragment(fragment_file)
+    candidate = copy.deepcopy(release_manifest)
     delivery = candidate["delivery"]
     delivery["backend_ready"] = backend_ready
     delivery["target"] = target
@@ -356,61 +340,50 @@ def _finalize_contract(
     if generation_failure:
         delivery["image_generation_status"] = "failed"
         delivery["image_generation_reason"] = generation_failure
-    elif any(item["state"] == "generated-local" for item in candidate["media"]["assets"]):
+    elif any(item["state"] == "generated-local" for item in candidate["media"]):
         delivery["image_generation_status"] = "complete"
         delivery["image_generation_reason"] = "Required generated assets exist in the workspace."
     elif delivery.get("image_generation_status") in {"pending", "failed"}:
         delivery["image_generation_status"] = "not-required"
         delivery["image_generation_reason"] = "N/A: no required placeholder remains."
-    candidate["status"] = "READY"
-    candidate["checks"]["fragment_sha256"] = fragment_sha256(fragment)
-    validate_contract(candidate, required_status="READY")
+    article_workspace.validate_release_manifest(candidate, article_title)
     return candidate
 
 
 def _run_audits(
     fragment_file: str,
-    contract: dict[str, Any],
     article: dict[str, Any],
+    *,
+    allow_media_placeholders: bool,
 ) -> list[dict[str, Any]]:
     scripts = Path(__file__).resolve().parent
     with tempfile.TemporaryDirectory(prefix="wechat-release-audit-") as temporary:
         root = Path(temporary)
         article_path = root / "fragment.html"
         metadata_path = root / "article.json"
-        contract_path = root / "design-contract.json"
         article_path.write_text(fragment_file, encoding="utf-8")
         audit_article = dict(article)
         audit_article["content"] = article_workspace._extract_fragment(fragment_file)
         metadata_path.write_bytes(_json_bytes(audit_article))
-        contract_path.write_bytes(_json_bytes(contract))
-        guidance = contract_warnings(contract)
-        results: list[dict[str, Any]] = [
-            {
-                "audit": "design-contract-guidance",
-                "ok": True,
-                "error_count": 0,
-                "warning_count": len(guidance),
-                "findings": guidance,
-            }
-        ]
+        results: list[dict[str, Any]] = []
         audit_environment = os.environ.copy()
         audit_environment["PYTHONUTF8"] = "1"
         audit_environment["PYTHONIOENCODING"] = "utf-8"
         for script in AUDITS:
+            command = [
+                sys.executable,
+                "-B",
+                str(scripts / script),
+                str(
+                    metadata_path
+                    if script == "audit_audience_boundary.py"
+                    else article_path
+                ),
+            ]
+            if script == "audit_wechat_markup.py" and allow_media_placeholders:
+                command.append("--allow-media-placeholders")
             completed = subprocess.run(
-                [
-                    sys.executable,
-                    "-B",
-                    str(scripts / script),
-                    str(
-                        metadata_path
-                        if script == "audit_audience_boundary.py"
-                        else article_path
-                    ),
-                    "--contract",
-                    str(contract_path),
-                ],
+                command,
                 check=False,
                 capture_output=True,
                 text=True,
@@ -433,7 +406,7 @@ def _run_audits(
 
 def _persist_and_sync(
     article_dir: Path,
-    contract: dict[str, Any],
+    release_manifest: dict[str, Any],
     article: dict[str, Any],
     fragment_file: str,
     *,
@@ -446,7 +419,7 @@ def _persist_and_sync(
         for name in article_workspace.TRACKED_FILES
     }
     try:
-        _save_json(article_dir / "design-contract.json", contract)
+        _save_json(article_dir / "release-manifest.json", release_manifest)
         _save_json(article_dir / "article.json", article)
         article_workspace._atomic_write_text(article_dir / "fragment.html", fragment_file)
         _save_json(article_dir / "manifest.json", manifest)
@@ -465,12 +438,10 @@ def release_workspace(
 ) -> tuple[dict[str, Any], int]:
     article_dir = article_dir.expanduser().resolve()
     manifest, article, fragment_file = article_workspace._workspace_files(article_dir)
-    contract = load_contract(article_dir / "design-contract.json")
-    validate_contract(contract)
-    if manifest.get("planned_contract_sha256") != article_workspace.planning_hash(contract):
-        raise ReleaseError(
-            "design decisions are not the recorded PLANNED contract; run the plan gate again"
-        )
+    title = article.get("title")
+    if not isinstance(title, str) or not title.strip():
+        raise ReleaseError("article.json title must be a non-empty string")
+    release_manifest = article_workspace.load_release_manifest(article_dir, title)
     submission = manifest.get("draft_submission")
     if isinstance(submission, dict) and submission.get("state") in {
         "submitting",
@@ -491,7 +462,7 @@ def release_workspace(
     status = _backend_status()
     direct = bool(status["ready"]) and not preview_only
 
-    blockers = _image_blockers(article_dir, contract, article, direct)
+    blockers = _image_blockers(article_dir, release_manifest, article, direct)
     attempt = manifest.get("image_generation_attempt")
     blocker_sha256 = _blocker_fingerprint(blockers) if blockers else ""
     if generation_failure:
@@ -551,7 +522,8 @@ def release_workspace(
             "blockers": blockers,
             "attempt_id": attempt["attempt_id"],
             "next_action": (
-                "Generate the required assets, set their contract state and source_path, "
+                "Generate the required assets, set their release-manifest state and "
+                "source_path, "
                 "then rerun. After a real generation failure, rerun with both the returned "
                 "--image-generation-attempt-id and --image-generation-failed."
             ),
@@ -563,7 +535,7 @@ def release_workspace(
     if blockers:
         direct = False
 
-    candidate_contract = copy.deepcopy(contract)
+    candidate_release = copy.deepcopy(release_manifest)
     candidate_article = dict(article)
     candidate_fragment = fragment_file
     fallback_reason = status.get("reason") if not direct and not preview_only else None
@@ -573,23 +545,16 @@ def release_workspace(
     preflight_audits: list[dict[str, Any]] = []
     if direct:
         preflight_fragment = _use_local_media_placeholders(
-            candidate_contract, candidate_fragment
-        )
-        preflight_contract = _finalize_contract(
-            candidate_contract,
-            preflight_fragment,
-            backend_ready=True,
-            target="local-preview",
-            preview_only=True,
-            generation_failure=None,
-            fallback_reason="pre-upload local audit only",
+            candidate_release, candidate_fragment
         )
         preflight_audits = _run_audits(
-            preflight_fragment, preflight_contract, candidate_article
+            preflight_fragment,
+            candidate_article,
+            allow_media_placeholders=True,
         )
         try:
-            candidate_contract, candidate_article, candidate_fragment = _upload_local_media(
-                article_dir, candidate_contract, candidate_article, candidate_fragment
+            candidate_release, candidate_article, candidate_fragment = _upload_local_media(
+                article_dir, candidate_release, candidate_article, candidate_fragment
             )
         except (ReleaseError, wechat_console_api.ConsoleApiError) as exc:
             direct = False
@@ -597,27 +562,34 @@ def release_workspace(
 
     if not direct:
         candidate_fragment = _use_local_media_placeholders(
-            candidate_contract, candidate_fragment
+            candidate_release, candidate_fragment
         )
 
     target = "direct-draft" if direct else "local-preview"
-    candidate_contract = _finalize_contract(
-        candidate_contract,
-        candidate_fragment,
+    candidate_release = _finalize_release_manifest(
+        candidate_release,
+        title,
         backend_ready=bool(status["ready"]),
         target=target,
         preview_only=preview_only,
         generation_failure=generation_failure,
         fallback_reason=fallback_reason,
     )
-    audits = _run_audits(candidate_fragment, candidate_contract, candidate_article)
+    audits = _run_audits(
+        candidate_fragment,
+        candidate_article,
+        allow_media_placeholders=not direct,
+    )
     sync = _persist_and_sync(
         article_dir,
-        candidate_contract,
+        candidate_release,
         candidate_article,
         candidate_fragment,
         local_preview=not direct,
     )
+    candidate_article = article_workspace._read_json(article_dir / "article.json")
+    candidate_release = article_workspace.load_release_manifest(article_dir, title)
+    candidate_fragment = (article_dir / "fragment.html").read_text(encoding="utf-8")
     if not direct:
         return {
             "ok": True,
@@ -636,9 +608,9 @@ def release_workspace(
     def fallback_after_failure(
         reason: str, http_status: int | None
     ) -> tuple[dict[str, Any], int]:
-        fallback_contract = _finalize_contract(
-            candidate_contract,
-            candidate_fragment,
+        fallback_release = _finalize_release_manifest(
+            candidate_release,
+            title,
             backend_ready=False,
             target="local-preview",
             preview_only=False,
@@ -646,11 +618,13 @@ def release_workspace(
             fallback_reason=reason,
         )
         fallback_audits = _run_audits(
-            candidate_fragment, fallback_contract, candidate_article
+            candidate_fragment,
+            candidate_article,
+            allow_media_placeholders=False,
         )
         fallback_sync = _persist_and_sync(
             article_dir,
-            fallback_contract,
+            fallback_release,
             candidate_article,
             candidate_fragment,
             local_preview=True,
@@ -787,7 +761,7 @@ def release_workspace(
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Enforce every design, validation, routing, and draft-delivery gate"
+        description="Postflight-audit and deliver a free-composition WeChat article"
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
     deliver = subparsers.add_parser("deliver")
@@ -818,7 +792,6 @@ def main(argv: list[str] | None = None) -> int:
         OSError,
         UnicodeError,
         json.JSONDecodeError,
-        ContractError,
         ReleaseError,
         article_workspace.WorkspaceError,
     ) as exc:

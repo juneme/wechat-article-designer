@@ -14,7 +14,7 @@ Do not choose an implementation pattern before the payload and module role are c
 
 ## Build the private manifest
 
-Write one row for each required module before composing HTML:
+When a structural sketch helps, note each meaningful module before composing HTML:
 
 | Field | Record |
 |---|---|
@@ -84,7 +84,7 @@ Delete or merge a block that exists only to add decoration. Split a block when i
 ## Originality and quality gates
 
 - Compare the new manifest with the nearest recognizable pattern or prior article. Change at least two meaningful aspects of module sequence, role treatment, or density curve when claiming an original composition.
-- Reject any workflow that starts from a finite theme list, theme selector, or source-to-output theme mapping; derive the manifest and design contract from the current payload.
+- Reject any workflow that starts from a finite theme list, theme selector, or source-to-output theme mapping; derive structure and composition from the current payload.
 - Confirm that every visible module maps to verified payload or a necessary reader action.
 - Confirm that repeated blocks share one semantic schema; visual similarity alone is not a reason to group unlike content.
 - Confirm that removing decoration preserves hierarchy, labels, reading order, and the action path.

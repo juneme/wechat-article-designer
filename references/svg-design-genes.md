@@ -12,7 +12,7 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 ## Construction grammar
 
 - Use one responsive outer `svg` per scene with a mobile-first `viewBox`, normally `0 0 360 H`, and `style="display:block;width:100%;height:auto;margin:0;"`. Values such as `width="360"` on inner SVG geometry are viewBox coordinates, not CSS pixels; the rendered outer width remains within the 320px article column.
-- Use inline presentation attributes, simple geometry, direct SVG text, solid fills, and unique element IDs.
+- Use inline presentation attributes. Simple geometry and solid fills are dependable starting points, while gradients, clipping, masks, filters, paths, symbols, patterns, and text paths remain available when they materially strengthen the scene and can be tested.
 - Add `role="img"`, a concise `title`, and a `desc` that explains the visible behavior without depending on it.
 - Keep the SVG free of scripts, event attributes, `foreignObject`, external styles, and web fonts.
 - Use final HTTPS WeChat image URLs when an SVG `<image>` is needed. Do not use local, relative, temporary, or non-WeChat asset paths.
@@ -20,20 +20,20 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 
 ## Motion vocabulary
 
-| Editorial intent | Preferred primitive | Rewrite or exclude |
+| Editorial intent | Useful primitives | Resilience check |
 |---|---|---|
-| Click to reveal | Animate `opacity` on one complete detail layer | Keep the prompt and essential conclusion readable before interaction |
-| Click to change state | Animate one target's `fill`, radius, scale, or layer opacity from the same click | Replace delayed multi-element chains with one direct state change |
-| Click to switch image | Crossfade two `<image>` layers or move one opaque cover | Use final hosted images and keep identity or conclusion in nearby HTML |
-| Horizontal sequence | Translate an ordinary group with `animateTransform` | Do not move text with `textPath` |
-| Direction or shape change | Morph path `d` or polygon `points` | Replace rotation-dependent storytelling with explicit shape states |
-| Draw or pulse emphasis | Animate `stroke-dashoffset`, `stroke-dasharray`, or `stroke-opacity` on a solid stroke | Avoid gradient strokes |
+| Click to reveal | Opacity, mask, clip, scale, or cover movement | Keep the prompt and essential conclusion readable before interaction |
+| Click to change state | Fill, radius, path, transform, filter, or layer transition | Ensure the first state explains what can change |
+| Click to switch image | Crossfade, mask reveal, clipping, or cover movement | Use final hosted images and keep identity or conclusion in nearby HTML |
+| Horizontal sequence | Group translation, path-guided travel, or staged reveal | Keep reading order understandable without the motion |
+| Direction or shape change | Path, polygon, radius, rotation, or coordinate morph | Make start and end silhouettes intentional |
+| Draw or pulse emphasis | Dash offset, opacity, width, filter, gradient, or scale | Avoid rapid motion that competes with reading |
 | Ambient atmosphere | Slowly translate, fade, or reshape a small number of leaves, birds, steam lines, light bands, rain marks, or related content-native forms | Keep the first frame composed and avoid motion that competes with reading |
-| Wipe reveal | Animate the width of an opaque cover rectangle | Do not use animated masks |
-| Aperture or expansion | Morph a visible path between compact and expanded shapes | Do not use animated `clipPath` |
-| Color movement | Animate solid fills across a small set of color bands | Do not depend on SVG gradients or animated gradient stops |
-| Focus simulation | Crossfade stacked crisp and offset text or shapes | Do not use blur filters |
-| Object travel | Prefer a simple one-axis group translation | Exclude `animateMotion` and coordinated `cx` plus `cy` orbit animation |
+| Wipe reveal | Cover rectangle, clip path, or mask | Preserve a meaningful uncovered initial state |
+| Aperture or expansion | Path morph, clip path, mask, or scale | Avoid hiding required information indefinitely |
+| Color movement | Solid fills, gradients, stop colors, or layered bands | Keep sufficient contrast through the cycle |
+| Focus simulation | Crossfade, offset layers, blur, or color separation | Keep core copy crisp in at least one stable state |
+| Object travel | Translation, coordinate animation, or `animateMotion` | Use a pace and path that support the story |
 
 ## Composition and pacing
 
@@ -48,7 +48,7 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 
 - Use a coherent solid-color hierarchy with sufficient text contrast; there is no fixed color-count quota. Related shades, seasonal transitions, and image-derived colors are valid when field, ink, signal, and atmosphere remain distinguishable. Color cannot be the only state cue.
 - Use direct `text` elements with explicit `x`, `y`, `fill`, and concise native SVG `font-*` attributes. SVG coordinate text is not an HTML flow-text role and does not need `data-type-role`, paragraph wrapping, `text-indent`, or the full HTML typography signature. Accessibility-only `title` and `desc` need no visible typography.
-- Avoid `textPath`, filters, gradients, and font-dependent visual tricks.
+- `textPath`, filters, gradients, and font-dependent visual tricks are valid expressive tools when the article gains something specific from them. Inspect substitution and fallback in the actual editor.
 - Keep long Chinese copy in ordinary HTML so editor font substitution or fixed SVG coordinates cannot damage reading.
 
 ## Content contract
@@ -60,4 +60,4 @@ Use this reference to compose SVG editorial components for WeChat articles. It c
 
 ## Delivery boundary
 
-Components built from these genes use the standard article quality gates: content integrity, rendered outer mobile width, contrast, hosted assets, and draft validation. SVG child geometry is audited as viewBox coordinates, while surrounding HTML remains under the normal typography contract. Do not add a separate SVG validation workflow. A genuinely new mechanism outside this vocabulary may be explored when it serves the article, and its working artifacts stay outside the Skill.
+Components built from these genes use the standard article quality gates: content integrity, rendered outer mobile width, readability, hosted assets, and draft validation. SVG child geometry is audited as viewBox coordinates. Do not add a separate SVG validation workflow or require the scene to match a predefined vocabulary. Explore any safe mechanism that serves the article; keep experiments outside publishable copy.
