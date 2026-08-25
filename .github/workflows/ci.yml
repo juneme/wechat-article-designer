@@ -25,7 +25,7 @@ jobs:
         run: python -m pip install -r requirements-dev.txt
 
       - name: Validate skill package and v4 regressions
-        run: python scripts/quick_validate.py .
+        run: python -B scripts/quick_validate.py .
 
       - name: Parse scripts without cache output
         run: python -B -c "import ast,pathlib; [ast.parse(p.read_text(encoding='utf-8')) for p in pathlib.Path('scripts').glob('*.py')]"
