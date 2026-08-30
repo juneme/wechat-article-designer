@@ -1,4 +1,4 @@
 interface:
-  display_name: "WeChat Article Designer"
-  short_description: "Write and freely art-direct WeChat articles"
-  default_prompt: "Use $wechat-article-designer to write and freely compose an original WeChat article, then run postflight safety and publishing checks. When all three console variables are present and the backend is healthy, create a new draft automatically; otherwise deliver local preview."
+  display_name: "云浪公众号排版"
+  short_description: "组合前沿媒介设计公众号文章，并默认写入微信草稿"
+  default_prompt: "Use $yunoe to check Yunoe Console while creating an original adaptive WeChat article that coordinates HTML, CSS, SVG/SMIL, images, and other compatible media; save a local comparison HTML and stage the result in the real draft box by default."

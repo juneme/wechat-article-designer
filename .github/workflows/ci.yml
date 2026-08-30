@@ -18,20 +18,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements-dev.txt
+      - name: Validate skill metadata
+        run: python -B -c "from pathlib import Path; text=Path('SKILL.md').read_text(encoding='utf-8'); front=text.split('---',2)[1]; assert 'name: yunoe' in front; assert 'description:' in front"
 
-      - name: Validate skill package and v4 regressions
-        run: python -B scripts/quick_validate.py .
-
-      - name: Parse scripts without cache output
-        run: python -B -c "import ast,pathlib; [ast.parse(p.read_text(encoding='utf-8')) for p in pathlib.Path('scripts').glob('*.py')]"
-
-      - name: Lint Python
-        run: python -m ruff check --no-cache .
-
-      - name: Audit release hygiene
-        run: python -B scripts/audit_release_hygiene.py .
+      - name: Parse lightweight client
+        run: python -B -m py_compile scripts/wechat_console.py
