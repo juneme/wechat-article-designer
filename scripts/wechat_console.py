@@ -235,7 +235,7 @@ def command_pair_ui(args: argparse.Namespace) -> None:
     root.withdraw()
     root.title("云浪公众号排版 · 本地安全配对")
     root.resizable(False, False)
-    root.configure(bg="#f7f5ef")
+    root.configure(bg="#f4f4f5")
 
     server_value = tk.StringVar(value=args.server or "")
     code_value = tk.StringVar()
@@ -244,7 +244,7 @@ def command_pair_ui(args: argparse.Namespace) -> None:
     status_detail_value = tk.StringVar(value="验证码不会显示在对话或命令行中。")
     events: queue.Queue[tuple[str, object, object | None]] = queue.Queue()
 
-    shell = tk.Frame(root, bg="#f7f5ef", width=680, height=454)
+    shell = tk.Frame(root, bg="#f4f4f5", width=680, height=454)
     shell.pack(fill="both", expand=True)
     shell.pack_propagate(False)
 
@@ -252,14 +252,14 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         shell,
         width=238,
         height=454,
-        bg="#123d38",
+        bg="#26282d",
         highlightthickness=0,
     )
     brand.pack(side="left", fill="y")
     brand.create_oval(146, -48, 306, 112, outline="#d8b36c", width=1)
     brand.create_oval(183, -11, 269, 75, fill="#d8b36c", outline="")
-    brand.create_oval(201, 7, 269, 75, fill="#123d38", outline="")
-    brand.create_line(0, 365, 80, 343, 162, 358, 238, 337, smooth=True, fill="#789a91")
+    brand.create_oval(201, 7, 269, 75, fill="#26282d", outline="")
+    brand.create_line(0, 365, 80, 343, 162, 358, 238, 337, smooth=True, fill="#8a93a3")
     brand.create_line(0, 390, 86, 365, 164, 382, 238, 361, smooth=True, fill="#d8b36c")
     brand.create_text(
         28,
@@ -273,7 +273,7 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         28,
         144,
         text="云浪\n公众号排版",
-        fill="#fffaf0",
+        fill="#f7f7f8",
         font=("Microsoft YaHei UI", 23, "bold"),
         anchor="nw",
     )
@@ -282,7 +282,7 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         28,
         272,
         text="一次验证，本地保存\n之后可直接管理微信草稿",
-        fill="#cbdad5",
+        fill="#d2d4d9",
         font=("Microsoft YaHei UI", 10),
         anchor="nw",
     )
@@ -290,27 +290,27 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         28,
         414,
         text="60 秒动态验证码",
-        fill="#a9c0b9",
+        fill="#aeb2bb",
         font=("Microsoft YaHei UI", 9),
         anchor="nw",
     )
 
-    panel = tk.Frame(shell, bg="#f7f5ef", padx=38, pady=30)
+    panel = tk.Frame(shell, bg="#f4f4f5", padx=38, pady=30)
     panel.pack(side="left", fill="both", expand=True)
 
     tk.Label(
         panel,
         text="连接云浪控制台",
-        bg="#f7f5ef",
-        fg="#173f3a",
+        bg="#f4f4f5",
+        fg="#25272c",
         font=("Microsoft YaHei UI", 18, "bold"),
         anchor="w",
     ).pack(fill="x")
     tk.Label(
         panel,
         text="在这里输入服务地址与当前验证码",
-        bg="#f7f5ef",
-        fg="#6f7975",
+        bg="#f4f4f5",
+        fg="#6e727a",
         font=("Microsoft YaHei UI", 9),
         anchor="w",
         pady=4,
@@ -319,8 +319,8 @@ def command_pair_ui(args: argparse.Namespace) -> None:
     tk.Label(
         panel,
         text="服务端地址",
-        bg="#f7f5ef",
-        fg="#263632",
+        bg="#f4f4f5",
+        fg="#2f3238",
         font=("Microsoft YaHei UI", 9, "bold"),
         anchor="w",
         pady=7,
@@ -332,21 +332,21 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         relief="flat",
         bd=0,
         bg="#ffffff",
-        fg="#22312e",
-        insertbackground="#173f3a",
+        fg="#23252a",
+        insertbackground="#4c638c",
         highlightthickness=1,
-        highlightbackground="#d9ddd9",
-        highlightcolor="#3c786d",
+        highlightbackground="#d8d9de",
+        highlightcolor="#64789e",
     )
     server_entry.pack(fill="x", ipady=9)
 
-    code_heading = tk.Frame(panel, bg="#f7f5ef")
+    code_heading = tk.Frame(panel, bg="#f4f4f5")
     code_heading.pack(fill="x", pady=(7, 0))
     tk.Label(
         code_heading,
         text="1 分钟验证码",
-        bg="#f7f5ef",
-        fg="#263632",
+        bg="#f4f4f5",
+        fg="#2f3238",
         font=("Microsoft YaHei UI", 9, "bold"),
         anchor="w",
     ).pack(side="left")
@@ -355,11 +355,11 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         text="显示",
         variable=show_code_value,
         command=lambda: code_entry.configure(show="" if show_code_value.get() else "●"),
-        bg="#f7f5ef",
-        fg="#68736f",
-        activebackground="#f7f5ef",
-        activeforeground="#173f3a",
-        selectcolor="#f7f5ef",
+        bg="#f4f4f5",
+        fg="#696d75",
+        activebackground="#f4f4f5",
+        activeforeground="#2f3238",
+        selectcolor="#f4f4f5",
         font=("Microsoft YaHei UI", 9),
         relief="flat",
         bd=0,
@@ -375,19 +375,19 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         relief="flat",
         bd=0,
         bg="#ffffff",
-        fg="#22312e",
-        insertbackground="#173f3a",
+        fg="#23252a",
+        insertbackground="#4c638c",
         highlightthickness=1,
-        highlightbackground="#d9ddd9",
-        highlightcolor="#3c786d",
+        highlightbackground="#d8d9de",
+        highlightcolor="#64789e",
     )
     code_entry.pack(fill="x", ipady=8)
 
     status_panel = tk.Frame(
         panel,
-        bg="#edf2ee",
+        bg="#eef0f4",
         highlightthickness=1,
-        highlightbackground="#d9e3dd",
+        highlightbackground="#d9dde5",
         padx=13,
         pady=9,
     )
@@ -395,8 +395,8 @@ def command_pair_ui(args: argparse.Namespace) -> None:
     status_label = tk.Label(
         status_panel,
         textvariable=status_title_value,
-        bg="#edf2ee",
-        fg="#285d50",
+        bg="#eef0f4",
+        fg="#465a78",
         font=("Microsoft YaHei UI", 9, "bold"),
         anchor="w",
         justify="left",
@@ -405,8 +405,8 @@ def command_pair_ui(args: argparse.Namespace) -> None:
     status_detail_label = tk.Label(
         status_panel,
         textvariable=status_detail_value,
-        bg="#edf2ee",
-        fg="#60716b",
+        bg="#eef0f4",
+        fg="#687282",
         font=("Microsoft YaHei UI", 8),
         anchor="w",
         justify="left",
@@ -416,10 +416,10 @@ def command_pair_ui(args: argparse.Namespace) -> None:
 
     def set_status(title: str, detail: str, tone: str) -> None:
         colors = {
-            "safe": ("#edf2ee", "#d9e3dd", "#285d50", "#60716b"),
+            "safe": ("#eef0f4", "#d9dde5", "#465a78", "#687282"),
             "warning": ("#f8f0e2", "#ead7b3", "#85552f", "#795f49"),
             "error": ("#f9ebe8", "#edcbc4", "#a13e35", "#7b554f"),
-            "success": ("#e8f3ed", "#c8e1d3", "#1f6b55", "#527064"),
+            "success": ("#e9eef6", "#cbd6e8", "#3f5f8a", "#64748a"),
         }
         background, border, title_color, detail_color = colors[tone]
         status_title_value.set(title)
@@ -488,11 +488,11 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         panel,
         text="验证并保存",
         command=submit,
-        bg="#173f3a",
+        bg="#34373d",
         fg="#ffffff",
-        activebackground="#245c53",
+        activebackground="#4b5059",
         activeforeground="#ffffff",
-        disabledforeground="#dbe7e2",
+        disabledforeground="#c5c8ce",
         font=("Microsoft YaHei UI", 11, "bold"),
         relief="flat",
         cursor="hand2",
