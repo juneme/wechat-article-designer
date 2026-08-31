@@ -1,4 +1,4 @@
 interface:
   display_name: "云浪公众号排版"
   short_description: "组合前沿媒介设计公众号文章，并默认写入微信草稿"
-  default_prompt: "Use $yunoe to check Yunoe Console while creating an original adaptive WeChat article that coordinates HTML, CSS, SVG/SMIL, images, and other compatible media; save a local comparison HTML and stage the result in the real draft box by default."
+  default_prompt: "Use $yunoe to check Yunoe Console and create an original adaptive WeChat article whose media combination follows the copy and serves visual quality, readability, and sharing; save a local comparison HTML and stage it in the real draft box by default."
