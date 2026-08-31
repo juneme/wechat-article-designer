@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path, PurePosixPath
-from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ROOT = "yunoe"
@@ -53,10 +53,15 @@ def package_entries() -> list[tuple[Path, str]]:
 
 def zip_info(name: str, *, directory: bool = False) -> ZipInfo:
     info = ZipInfo(name, date_time=(2026, 1, 1, 0, 0, 0))
-    info.compress_type = ZIP_DEFLATED
+    info.compress_type = ZIP_STORED
     info.create_system = 3
     info.external_attr = (0o40755 if directory else 0o100644) << 16
     return info
+
+
+def source_bytes(source: Path) -> bytes:
+    text = source.read_text(encoding="utf-8")
+    return text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
 
 
 def build_archive(output: Path) -> None:
@@ -67,7 +72,7 @@ def build_archive(output: Path) -> None:
             for directory in DIRECTORIES:
                 archive.writestr(zip_info(directory, directory=True), b"")
             for source, name in package_entries():
-                archive.writestr(zip_info(name), source.read_bytes())
+                archive.writestr(zip_info(name), source_bytes(source))
         verify_archive(temporary_output)
         temporary_output.replace(output)
     finally:
@@ -95,7 +100,7 @@ def verify_archive(archive_path: Path) -> None:
             if path.is_absolute() or ".." in path.parts or "\\" in name:
                 raise RuntimeError(f"unsafe archive path: {name}")
         for name, source in expected_files.items():
-            if archive.read(name) != source.read_bytes():
+            if archive.read(name) != source_bytes(source):
                 raise RuntimeError(f"archive content does not match source: {name}")
 
 
