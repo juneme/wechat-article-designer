@@ -150,6 +150,10 @@ def _authorized_request(
     content_type: str | None = None,
 ) -> object:
     config = _load_config()
+    configured_account_id = config.get("active_account_id")
+    account_id = args.account_id
+    if account_id is None and isinstance(configured_account_id, int):
+        account_id = configured_account_id
     if payload is not None:
         body = _json_bytes(payload)
         content_type = "application/json"
@@ -157,7 +161,7 @@ def _authorized_request(
         method,
         f"{config['console_url']}{path}",
         token=config["client_token"],
-        account_id=args.account_id,
+        account_id=account_id,
         body=body,
         content_type=content_type,
     )

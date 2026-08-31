@@ -70,6 +70,7 @@ jobs:
         run: |
           python -B -c "from pathlib import Path; text=Path('SKILL.md').read_text(encoding='utf-8'); front=text.split('---',2)[1]; assert 'name: yunoe' in front; assert 'description:' in front"
           python -B -m py_compile scripts/wechat_console.py scripts/build_release.py
+          python -B -m unittest discover -s tests -v
 
       - name: Build and verify release archive
         if: steps.release_state.outputs.needed == 'true'

@@ -26,6 +26,9 @@ jobs:
       - name: Parse lightweight client
         run: python -B -m py_compile scripts/wechat_console.py
 
+      - name: Test lightweight client
+        run: python -B -m unittest discover -s tests -v
+
       - name: Build skill release archive
         run: python -B scripts/build_release.py
 
