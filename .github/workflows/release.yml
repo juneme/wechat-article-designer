@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "VERSION"
+      - ".github/workflows/release.yml"
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve release version
+        id: version
+        run: |
+          version="$(tr -d '\r\n' < VERSION)"
+          python -c "import re, sys; assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', sys.argv[1]), f'invalid version: {sys.argv[1]!r}'" "$version"
+          echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+          echo "asset=yunoe-v${version}.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether this version needs a release
+        id: release_state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          ASSET_NAME: ${{ steps.version.outputs.asset }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            if [[ "$GITHUB_REF_NAME" != "$RELEASE_TAG" ]]; then
+              echo "Tag $GITHUB_REF_NAME does not match package version $RELEASE_TAG" >&2
+              exit 1
+            fi
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          remote_commit="$(git ls-remote origin "refs/tags/${RELEASE_TAG}" | cut -f1)"
+          if [[ -z "$remote_commit" || "$remote_commit" == "$GITHUB_SHA" ]]; then
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          elif gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' 2>/dev/null | grep -Fxq "$ASSET_NAME"; then
+            echo "Release $RELEASE_TAG already has $ASSET_NAME; nothing to do."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Tag $RELEASE_TAG exists at another commit but its release asset is missing." >&2
+            exit 1
+          fi
+
+      - name: Validate skill and client
+        if: steps.release_state.outputs.needed == 'true'
+        run: |
+          python -B -c "from pathlib import Path; text=Path('SKILL.md').read_text(encoding='utf-8'); front=text.split('---',2)[1]; assert 'name: yunoe' in front; assert 'description:' in front"
+          python -B -m py_compile scripts/wechat_console.py scripts/build_release.py
+
+      - name: Build and verify release archive
+        if: steps.release_state.outputs.needed == 'true'
+        env:
+          ASSET_NAME: ${{ steps.version.outputs.asset }}
+        run: |
+          python -B scripts/build_release.py --output "artifacts/${ASSET_NAME}"
+          python -B scripts/build_release.py --verify-only "artifacts/${ASSET_NAME}"
+
+      - name: Create version tag when releasing from main
+        if: steps.release_state.outputs.needed == 'true' && github.ref_type != 'tag'
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if ! git ls-remote --exit-code origin "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            git tag "$RELEASE_TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
+      - name: Create release and upload archive
+        if: steps.release_state.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+          ASSET_NAME: ${{ steps.version.outputs.asset }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "Yunoe ${RELEASE_TAG}"
+          fi
+          gh release upload "$RELEASE_TAG" "artifacts/${ASSET_NAME}" --clobber

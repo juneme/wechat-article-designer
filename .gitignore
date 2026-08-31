@@ -1,6 +1,7 @@
 *.bak
 __pycache__/
 *.py[cod]
+artifacts/
 .ruff_cache/
 .DS_Store
 Thumbs.db

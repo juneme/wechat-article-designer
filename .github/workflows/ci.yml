@@ -25,3 +25,18 @@ jobs:
 
       - name: Parse lightweight client
         run: python -B -m py_compile scripts/wechat_console.py
+
+      - name: Build skill release archive
+        run: python -B scripts/build_release.py
+
+      - name: Verify skill release archive
+        run: |
+          version="$(tr -d '\r\n' < VERSION)"
+          python -B scripts/build_release.py --verify-only "artifacts/yunoe-v${version}.zip"
+
+      - name: Upload verified skill release
+        uses: actions/upload-artifact@v4
+        with:
+          name: yunoe-skill-release
+          path: artifacts/yunoe-v*.zip
+          if-no-files-found: error
