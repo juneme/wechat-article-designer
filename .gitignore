@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 artifacts/
+tests/
 .ruff_cache/
 .DS_Store
 Thumbs.db

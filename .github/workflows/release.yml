@@ -68,9 +68,14 @@ jobs:
       - name: Validate skill and client
         if: steps.release_state.outputs.needed == 'true'
         run: |
+          tracked_tests="$(git ls-files | grep -E '(^|/)tests?/|(^|/)test_[^/]*\.py$' || true)"
+          if [[ -n "$tracked_tests" ]]; then
+            echo "Development-only test files must not enter the public repository:" >&2
+            echo "$tracked_tests" >&2
+            exit 1
+          fi
           python -B -c "from pathlib import Path; text=Path('SKILL.md').read_text(encoding='utf-8'); front=text.split('---',2)[1]; assert 'name: yunoe' in front; assert 'description:' in front"
           python -B -m py_compile scripts/wechat_console.py scripts/build_release.py
-          python -B -m unittest discover -s tests -v
 
       - name: Build and verify release archive
         if: steps.release_state.outputs.needed == 'true'

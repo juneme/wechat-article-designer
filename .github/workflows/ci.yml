@@ -26,8 +26,14 @@ jobs:
       - name: Parse lightweight client
         run: python -B -m py_compile scripts/wechat_console.py
 
-      - name: Test lightweight client
-        run: python -B -m unittest discover -s tests -v
+      - name: Reject development-only test files
+        run: |
+          tracked_tests="$(git ls-files | grep -E '(^|/)tests?/|(^|/)test_[^/]*\.py$' || true)"
+          if [[ -n "$tracked_tests" ]]; then
+            echo "Development-only test files must not enter the public repository:" >&2
+            echo "$tracked_tests" >&2
+            exit 1
+          fi
 
       - name: Build skill release archive
         run: python -B scripts/build_release.py
