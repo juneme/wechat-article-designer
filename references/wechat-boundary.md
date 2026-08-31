@@ -26,6 +26,6 @@ These are compatibility constraints, not a style guide. Everything not constrain
 
 ## Media
 
-- Body raster images submitted directly through the draft API must use WeChat-hosted article image URLs returned by Yunoe Console's `article` upload mode. Normalize a returned `http://mmbiz.qpic.cn` URL to HTTPS before submission because draft validation rejects non-HTTPS body images.
+- Body raster images submitted directly through the draft API must use WeChat-hosted article image URLs returned by Yunoe Console's `article` upload mode. WeChat may return either `http://mmecoa.qpic.cn` or `http://mmbiz.qpic.cn`; the Yunoe client and server normalize both to the canonical `https://mmbiz.qpic.cn` host while preserving the returned path and query string.
 - A cover must be uploaded as permanent WeChat material, and its returned `media_id` must be supplied as `thumb_media_id`.
 - Do not rely on a local path, data URL, temporary object URL, or inaccessible external URL in the submitted article.

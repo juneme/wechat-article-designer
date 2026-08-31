@@ -5,17 +5,27 @@ import getpass
 import json
 import mimetypes
 import os
+import re
 import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode, urlparse, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 
 CONFIG_PATH = Path.home() / ".codex" / "yunoe" / "client.json"
 WRITE_METHODS = {"POST", "PUT", "DELETE"}
+WECHAT_IMAGE_HOST_ALIASES = {"mmbiz.qpic.cn", "mmecoa.qpic.cn"}
+_IMAGE_TAG_PATTERN = re.compile(
+    r"<img\b(?:[^>'\"]|'[^']*'|\"[^\"]*\")*>", re.IGNORECASE
+)
+_SOURCE_ATTRIBUTE_PATTERN = re.compile(
+    r"(?P<prefix>\bsrc\s*=\s*)"
+    r"(?:(?P<quote>['\"])(?P<quoted>.*?)(?P=quote)|(?P<bare>[^\s>]+))",
+    re.IGNORECASE,
+)
 
 
 class ClientError(RuntimeError):
@@ -36,6 +46,30 @@ def _server_url(value: str) -> str:
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise ClientError("服务器地址必须以 http:// 或 https:// 开头")
     return result
+
+
+def _normalize_article_image_url(source: str) -> str:
+    parsed = urlsplit(source.strip())
+    if (parsed.hostname or "").lower() not in WECHAT_IMAGE_HOST_ALIASES:
+        return source.strip()
+    return urlunsplit(
+        ("https", "mmbiz.qpic.cn", parsed.path, parsed.query, parsed.fragment)
+    )
+
+
+def _normalize_article_content(content: str) -> str:
+    def normalize_tag(tag_match: re.Match[str]) -> str:
+        def normalize_source(source_match: re.Match[str]) -> str:
+            quote = source_match.group("quote") or ""
+            source = source_match.group("quoted") or source_match.group("bare") or ""
+            normalized = _normalize_article_image_url(source)
+            return f"{source_match.group('prefix')}{quote}{normalized}{quote}"
+
+        return _SOURCE_ATTRIBUTE_PATTERN.sub(
+            normalize_source, tag_match.group(0), count=1
+        )
+
+    return _IMAGE_TAG_PATTERN.sub(normalize_tag, content)
 
 
 def _save_config(config: dict) -> None:
@@ -178,6 +212,8 @@ def _load_payload(path_value: str, *, allow_content_file: bool = False) -> dict:
             payload["content"] = content_path.read_text(encoding="utf-8")
         except FileNotFoundError as exc:
             raise ClientError(f"正文文件不存在：{content_path}") from exc
+    if allow_content_file and isinstance(payload.get("content"), str):
+        payload["content"] = _normalize_article_content(payload["content"])
     return payload
 
 

@@ -20,7 +20,7 @@ python scripts/wechat_console.py pair --server http://SERVER:8791
 
 Enter the one-minute verification code at the hidden prompt. The code is single-use. The response's unified client token is saved under `%USERPROFILE%\.codex\yunoe\client.json`; it is never printed.
 
-Re-pairing revokes the previous token. A password change also revokes tokens. Run `status` after either event and pair again when required.
+Each successful pairing creates a separate client token. Pairing in Codex, Trae, or another client does not revoke tokens already issued to the same user; the 16 most recently used tokens remain valid. A password change revokes all browser sessions and client tokens for that user. Run `status` after a password change and pair each required client again.
 
 HTTP is supported for a trusted personal deployment, but both verification code and token travel in plaintext. Prefer HTTPS on untrusted networks.
 

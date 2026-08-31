@@ -40,7 +40,7 @@ git clone https://github.com/juneme/wechat-article-designer.git "$env:USERPROFIL
 python scripts/wechat_console.py pair-ui --server http://SERVER:8791
 ```
 
-服务端地址与验证码只在本地窗口填写。配对成功后，统一客户端令牌保存于用户目录但不会打印；重新配对会撤销旧令牌。可信个人环境可使用 HTTP，公网环境应配置 HTTPS。
+服务端地址与验证码只在本地窗口填写。配对成功后，统一客户端令牌保存于用户目录但不会打印；Codex、Trae 等客户端各自配对不会使其他客户端失效，服务端为每个用户保留最近使用的 16 枚令牌。可信个人环境可使用 HTTP，公网环境应配置 HTTPS。
 
 ## 客户端命令
 
