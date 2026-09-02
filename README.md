@@ -4,6 +4,8 @@
 [![License](https://img.shields.io/github/license/juneme/wechat-article-designer?style=flat-square)](LICENSE)
 [![Console](https://img.shields.io/badge/companion-云浪控制台-173f3a?style=flat-square)](https://github.com/juneme/wechat-console-server)
 
+![三篇由 Yunoe 自主设计、风格各异的公众号文章](docs/images/skill-hero.png)
+
 面向微信公众号的轻量 Codex Skill。Yunoe 根据文章内容自主完成写作与视觉设计，在真实验证过的微信边界内组合 HTML、内联 CSS、SVG/SMIL、图片及其他兼容媒介，并默认把成稿写入微信公众号草稿箱。
 
 它不包含排版模板、预设主题、案例库、设计评分或固定工作流。文章的结构、审美、层级与媒介选择由 AI 根据当前内容独立完成。
@@ -39,6 +41,10 @@ git clone https://github.com/juneme/wechat-article-designer.git "$env:USERPROFIL
 ```powershell
 python scripts/wechat_console.py pair-ui --server http://SERVER:8791
 ```
+
+<p align="center">
+  <img src="docs/images/pair-ui.png" width="460" alt="本地安全配对窗口：服务端地址与 60 秒验证码只在本地填写">
+</p>
 
 服务端地址与验证码只在本地窗口填写。配对成功后，统一客户端令牌保存于用户目录但不会打印；Codex、Trae 等客户端各自配对不会使其他客户端失效，服务端为每个用户保留最近使用的 16 枚令牌。可信个人环境可使用 HTTP，公网环境应配置 HTTPS。
 
