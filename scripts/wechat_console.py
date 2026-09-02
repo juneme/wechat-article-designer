@@ -150,10 +150,6 @@ def _authorized_request(
     content_type: str | None = None,
 ) -> object:
     config = _load_config()
-    configured_account_id = config.get("active_account_id")
-    account_id = args.account_id
-    if account_id is None and isinstance(configured_account_id, int):
-        account_id = configured_account_id
     if payload is not None:
         body = _json_bytes(payload)
         content_type = "application/json"
@@ -161,7 +157,7 @@ def _authorized_request(
         method,
         f"{config['console_url']}{path}",
         token=config["client_token"],
-        account_id=account_id,
+        account_id=args.account_id,
         body=body,
         content_type=content_type,
     )
@@ -239,7 +235,6 @@ def _exchange_pairing(console_url: str, code: str) -> tuple[str, str | None]:
         {
             "console_url": saved_url,
             "client_token": result["client_token"],
-            "active_account_id": result.get("active_account_id"),
             "paired_at": datetime.now(UTC).isoformat(timespec="seconds"),
         }
     )
@@ -284,9 +279,8 @@ def command_pair_ui(args: argparse.Namespace) -> None:
     status_detail_value = tk.StringVar(value="验证码不会显示在对话或命令行中。")
     events: queue.Queue[tuple[str, object, object | None]] = queue.Queue()
 
-    shell = tk.Frame(root, bg="#f4f4f5", width=680, height=454)
+    shell = tk.Frame(root, bg="#f4f4f5")
     shell.pack(fill="both", expand=True)
-    shell.pack_propagate(False)
 
     brand = tk.Canvas(
         shell,
@@ -551,9 +545,10 @@ def command_pair_ui(args: argparse.Namespace) -> None:
         server_entry.focus_set()
     root.after(100, poll_events)
 
-    window_width = 680
-    window_height = 454
     root.update_idletasks()
+    window_width = max(680, root.winfo_reqwidth())
+    window_height = max(454, root.winfo_reqheight())
+    brand.configure(height=window_height)
     x = max(0, (root.winfo_screenwidth() - window_width) // 2)
     y = max(0, (root.winfo_screenheight() - window_height) // 2)
     root.geometry(f"{window_width}x{window_height}+{x}+{y}")
@@ -566,13 +561,16 @@ def command_pair_ui(args: argparse.Namespace) -> None:
 
 def command_status(args: argparse.Namespace) -> None:
     config = _load_config()
-    _authorized_request(args, "GET", "/api/v1/temp-images?limit=1")
+    context = _authorized_request(args, "GET", "/api/v1/account")
+    if not isinstance(context, dict) or not isinstance(context.get("account"), dict):
+        raise ClientError("服务器未返回当前公众号上下文")
     _print_json(
         {
             "paired": True,
             "server_healthy": True,
             "console_url": config["console_url"],
-            "active_account_id": config.get("active_account_id"),
+            "active_account_id": context.get("active_account_id"),
+            "account": context["account"],
         }
     )
 

@@ -20,7 +20,7 @@ python scripts/wechat_console.py pair --server http://SERVER:8791
 
 Enter the one-minute verification code at the hidden prompt. The code is single-use. The response's unified client token is saved under `%USERPROFILE%\.codex\yunoe\client.json`; it is never printed.
 
-Each successful pairing creates a separate client token. Pairing in Codex, Trae, or another client does not revoke tokens already issued to the same user; the 16 most recently used tokens remain valid. A password change revokes all browser sessions and client tokens for that user. Run `status` after a password change and pair each required client again.
+Each successful pairing creates a separate client token bound to the console user, not to one official account. Pairing in Codex, Trae, or another client does not revoke tokens already issued to the same user; the 16 most recently used tokens remain valid. Switching the active official account does not require pairing again: commands without `--account-id` follow the server's current account, and `status` reads that account live from the server. A password change revokes all browser sessions and client tokens for that user. Run `status` after a password change and pair each required client again.
 
 HTTP is supported for a trusted personal deployment, but both verification code and token travel in plaintext. Prefer HTTPS on untrusted networks.
 
@@ -43,7 +43,7 @@ wechat-update MEDIA_ID --json FILE
 wechat-delete MEDIA_ID --confirm
 ```
 
-Pass `--account-id ID` before the command to target another official account owned by the paired user.
+Pass `--account-id ID` before the command only for a one-command override to another official account owned by the paired user. Never infer this flag from locally saved pairing data.
 
 Draft create JSON accepts `content_file`; paths are resolved relative to the JSON file. Update JSON contains only changed article fields.
 
